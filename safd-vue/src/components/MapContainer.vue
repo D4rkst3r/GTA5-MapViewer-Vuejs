@@ -1,4 +1,4 @@
-<!-- src/components/MapContainer.vue (VOLLSTÄNDIG KORRIGIERT) -->
+<!-- src/components/MapContainer.vue - VOLLSTÄNDIGE VERSION MIT ZEICHENTOOLS -->
 <template>
   <div id="map" ref="mapContainer" class="map-container"></div>
 </template>
@@ -33,6 +33,14 @@ const tileSize = 256
 const maxZoom = 5
 const geoBounds = [-180, -85, 180, 85]
 
+// 🎨 Drawing Styles Management
+let currentDrawingStyles = {
+  strokeColor: '#ff4444',
+  fillColor: '#ff4444',
+  strokeWidth: 3,
+  fillOpacity: 0.3,
+}
+
 // 🏭 POI Categories für Category Layer
 const poiCategories = {
   gas_station: { name: 'Tankstelle', color: '#ff6b35', icon: '⛽' },
@@ -40,6 +48,16 @@ const poiCategories = {
   power_plant: { name: 'Umspannwerk', color: '#ffd43b', icon: '⚡' },
   oil_pump: { name: 'Ölpumpe', color: '#495057', icon: '🛢️' },
   tanks: { name: 'Tanks', color: '#20c997', icon: '🛢️' },
+}
+
+// 📍 Marker Categories
+const markerCategories = {
+  route: { name: 'Anfahrtsweg', color: '#4287f5', icon: 'fas fa-route' },
+  assembly: { name: 'Sammelplatz', color: '#ff8800', icon: 'fas fa-users' },
+  warning: { name: 'Warnung', color: '#ff4757', icon: 'fas fa-exclamation-triangle' },
+  star: { name: 'Markierung', color: '#9d4edd', icon: 'fas fa-star' },
+  staging: { name: 'Bereitstellung', color: '#2ed573', icon: 'fas fa-truck' },
+  command: { name: 'Führungsstelle', color: '#ff6b35', icon: 'fas fa-flag' },
 }
 
 // 🎨 Map Style Configuration
@@ -96,59 +114,133 @@ const createMapStyle = () => ({
   ],
 })
 
-// 🎨 MapboxDraw Styles
-const getDrawStyles = () => [
-  {
-    id: 'gl-draw-polygon-fill-inactive',
-    type: 'fill',
-    filter: [
-      'all',
-      ['==', 'active', 'false'],
-      ['==', '$type', 'Polygon'],
-      ['!=', 'mode', 'static'],
-    ],
-    paint: {
-      'fill-color': '#ff4444',
-      'fill-outline-color': '#ff4444',
-      'fill-opacity': 0.3,
+// 🎨 Enhanced MapboxDraw Styles mit Dynamic Colors
+const getDrawStyles = () => {
+  return [
+    // Polygon Fill (inactive)
+    {
+      id: 'gl-draw-polygon-fill-inactive',
+      type: 'fill',
+      filter: [
+        'all',
+        ['==', 'active', 'false'],
+        ['==', '$type', 'Polygon'],
+        ['!=', 'mode', 'static'],
+      ],
+      paint: {
+        'fill-color': currentDrawingStyles.fillColor,
+        'fill-outline-color': currentDrawingStyles.strokeColor,
+        'fill-opacity': currentDrawingStyles.fillOpacity,
+      },
     },
-  },
-  {
-    id: 'gl-draw-polygon-stroke-inactive',
-    type: 'line',
-    filter: [
-      'all',
-      ['==', 'active', 'false'],
-      ['==', '$type', 'Polygon'],
-      ['!=', 'mode', 'static'],
-    ],
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#ff4444', 'line-width': 3 },
-  },
-  {
-    id: 'gl-draw-line-inactive',
-    type: 'line',
-    filter: [
-      'all',
-      ['==', 'active', 'false'],
-      ['==', '$type', 'LineString'],
-      ['!=', 'mode', 'static'],
-    ],
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#ff4444', 'line-width': 3 },
-  },
-  {
-    id: 'gl-draw-point-inactive',
-    type: 'circle',
-    filter: ['all', ['==', 'active', 'false'], ['==', '$type', 'Point'], ['!=', 'mode', 'static']],
-    paint: {
-      'circle-radius': 8,
-      'circle-color': '#ff4444',
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#ffffff',
+    // Polygon Fill (active)
+    {
+      id: 'gl-draw-polygon-fill-active',
+      type: 'fill',
+      filter: ['all', ['==', 'active', 'true'], ['==', '$type', 'Polygon']],
+      paint: {
+        'fill-color': currentDrawingStyles.fillColor,
+        'fill-outline-color': currentDrawingStyles.strokeColor,
+        'fill-opacity': currentDrawingStyles.fillOpacity * 0.8,
+      },
     },
-  },
-]
+    // Polygon Stroke (inactive)
+    {
+      id: 'gl-draw-polygon-stroke-inactive',
+      type: 'line',
+      filter: [
+        'all',
+        ['==', 'active', 'false'],
+        ['==', '$type', 'Polygon'],
+        ['!=', 'mode', 'static'],
+      ],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': currentDrawingStyles.strokeColor,
+        'line-width': currentDrawingStyles.strokeWidth,
+      },
+    },
+    // Polygon Stroke (active)
+    {
+      id: 'gl-draw-polygon-stroke-active',
+      type: 'line',
+      filter: ['all', ['==', 'active', 'true'], ['==', '$type', 'Polygon']],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': currentDrawingStyles.strokeColor,
+        'line-width': currentDrawingStyles.strokeWidth + 1,
+      },
+    },
+    // LineString (inactive)
+    {
+      id: 'gl-draw-line-inactive',
+      type: 'line',
+      filter: [
+        'all',
+        ['==', 'active', 'false'],
+        ['==', '$type', 'LineString'],
+        ['!=', 'mode', 'static'],
+      ],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': currentDrawingStyles.strokeColor,
+        'line-width': currentDrawingStyles.strokeWidth,
+      },
+    },
+    // LineString (active)
+    {
+      id: 'gl-draw-line-active',
+      type: 'line',
+      filter: ['all', ['==', 'active', 'true'], ['==', '$type', 'LineString']],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': currentDrawingStyles.strokeColor,
+        'line-width': currentDrawingStyles.strokeWidth + 2,
+      },
+    },
+    // Points (inactive)
+    {
+      id: 'gl-draw-point-inactive',
+      type: 'circle',
+      filter: [
+        'all',
+        ['==', 'active', 'false'],
+        ['==', '$type', 'Point'],
+        ['!=', 'mode', 'static'],
+      ],
+      paint: {
+        'circle-radius': currentDrawingStyles.strokeWidth * 2 + 4,
+        'circle-color': currentDrawingStyles.fillColor,
+        'circle-stroke-width': currentDrawingStyles.strokeWidth,
+        'circle-stroke-color': currentDrawingStyles.strokeColor,
+      },
+    },
+    // Points (active)
+    {
+      id: 'gl-draw-point-active',
+      type: 'circle',
+      filter: ['all', ['==', 'active', 'true'], ['==', '$type', 'Point']],
+      paint: {
+        'circle-radius': currentDrawingStyles.strokeWidth * 2 + 6,
+        'circle-color': currentDrawingStyles.fillColor,
+        'circle-stroke-width': currentDrawingStyles.strokeWidth + 1,
+        'circle-stroke-color': currentDrawingStyles.strokeColor,
+      },
+    },
+    // Vertex points
+    {
+      id: 'gl-draw-polygon-and-line-vertex-inactive',
+      type: 'circle',
+      filter: ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point']],
+      paint: {
+        'circle-radius': 5,
+        'circle-color': '#ffffff',
+        'circle-stroke-width': 2,
+        'circle-stroke-color': currentDrawingStyles.strokeColor,
+      },
+    },
+  ]
+}
 
 // 🔧 Map Initialization
 const initializeMap = () => {
@@ -173,6 +265,12 @@ const initializeMap = () => {
       // Drawing System initialisieren
       initializeDrawing()
 
+      // Enhanced Drawing Events
+      setupEnhancedDrawingEvents()
+
+      // Drawing Event Listeners für Sidebar
+      setupDrawingEventListeners()
+
       // Map Events für Position Picking setup
       setupMapEvents()
 
@@ -189,6 +287,9 @@ const initializeMap = () => {
 
       // Parent Component benachrichtigen
       emit('map-ready', map)
+
+      // Debug Functions exposed
+      exposeDrawingFunctions()
     })
 
     // Standard Map Events
@@ -199,98 +300,12 @@ const initializeMap = () => {
     map.on('move', () => {
       mapStore.updateCenter(map.getCenter())
     })
+
+    map.on('error', (e) => {
+      console.error('❌ Map error:', e)
+    })
   } catch (error) {
     console.error('❌ Map Initialisierung fehlgeschlagen:', error)
-  }
-}
-
-// 🎯 Map Events Setup
-const setupMapEvents = () => {
-  console.log('🎯 Setup Map Events für Position Picking...')
-
-  // Hauptsächlicher Map Click Handler
-  map.on('click', (e) => {
-    console.log('🗺️ Map Click:', e.lngLat)
-
-    // ✅ KORRIGIERT: Verwende UI Store computed property
-    if (uiStore.isPickingPosition) {
-      handlePositionPick(e.lngLat)
-      return // Früher Return verhindert weitere Click-Handler
-    }
-
-    // ℹ️ Normale Map Clicks (Info Panel schließen etc.)
-    if (uiStore.showInfoPanel) {
-      uiStore.closeInfoPanel()
-    }
-
-    console.log('🗺️ Normaler Map Click - keine Aktion erforderlich')
-  })
-
-  // Cursor Management für Position Picking
-  map.on('mousemove', () => {
-    if (uiStore.isPickingPosition) {
-      map.getCanvas().style.cursor = 'crosshair'
-    } else {
-      map.getCanvas().style.cursor = ''
-    }
-  })
-}
-
-// ✅ KORRIGIERT: Position Pick Handler
-const handlePositionPick = (lngLat) => {
-  console.log('🎯 Position picked:', lngLat)
-
-  try {
-    // 🚒 Hydrant hinzufügen
-    if (uiStore.isAddingHydrant && uiStore.pendingHydrantData) {
-      const newHydrant = {
-        ...uiStore.pendingHydrantData,
-        lng: lngLat.lng,
-        lat: lngLat.lat,
-      }
-
-      hydrantsStore.addHydrant(newHydrant)
-      uiStore.resetPositionPicking()
-
-      console.log('✅ Hydrant hinzugefügt:', newHydrant)
-      emit('position-picked', { type: 'hydrant', data: newHydrant })
-    }
-
-    // 🏭 POI hinzufügen
-    else if (uiStore.isAddingPOI && uiStore.pendingPOIData) {
-      const newPOI = {
-        ...uiStore.pendingPOIData,
-        lng: lngLat.lng,
-        lat: lngLat.lat,
-      }
-
-      poiStore.addPOI(newPOI)
-      uiStore.resetPositionPicking()
-
-      console.log('✅ POI hinzugefügt:', newPOI)
-      emit('position-picked', { type: 'poi', data: newPOI })
-    }
-
-    // ✅ KORRIGIERT: Marker hinzufügen mit Store
-    else if (uiStore.isAddingMarker && uiStore.pendingMarkerData) {
-      const newMarker = {
-        ...uiStore.pendingMarkerData,
-        lng: lngLat.lng,
-        lat: lngLat.lat,
-      }
-
-      markersStore.addMarker(newMarker)
-      uiStore.resetPositionPicking()
-
-      console.log('✅ Marker hinzugefügt:', newMarker)
-      emit('position-picked', { type: 'marker', data: newMarker })
-    }
-
-    // Cursor zurücksetzen
-    map.getCanvas().style.cursor = ''
-  } catch (error) {
-    console.error('❌ Fehler beim Position Picking:', error)
-    uiStore.resetPositionPicking()
   }
 }
 
@@ -300,10 +315,10 @@ const initializeDrawing = () => {
     draw = new MapboxDraw({
       displayControlsDefault: false,
       controls: {
-        polygon: true,
-        line_string: true,
-        point: true,
-        trash: true,
+        polygon: false,
+        line_string: false,
+        point: false,
+        trash: false,
       },
       defaultMode: 'simple_select',
       styles: getDrawStyles(),
@@ -311,26 +326,261 @@ const initializeDrawing = () => {
 
     map.addControl(draw, 'top-left')
 
-    // Drawing Events
-    map.on('draw.create', () => {
-      console.log('🎨 Zeichnung erstellt')
-      updateDrawingsInStore()
-    })
-
-    map.on('draw.update', () => {
-      console.log('🎨 Zeichnung aktualisiert')
-      updateDrawingsInStore()
-    })
-
-    map.on('draw.delete', () => {
-      console.log('🎨 Zeichnung gelöscht')
-      updateDrawingsInStore()
-    })
-
     console.log('✅ Drawing System initialisiert')
   } catch (error) {
     console.error('❌ Drawing System Fehler:', error)
   }
+}
+
+// 🎨 Enhanced Drawing Events
+const setupEnhancedDrawingEvents = () => {
+  if (!map || !draw) return
+
+  // Drawing Created
+  map.on('draw.create', (e) => {
+    console.log('🎨 Zeichnung erstellt:', e.features[0].geometry.type)
+    updateDrawingsInStore()
+
+    // Show success feedback
+    const feature = e.features[0]
+    const type = feature.geometry.type
+    const typeNames = {
+      Point: 'Punkt',
+      LineString: 'Linie',
+      Polygon: 'Polygon',
+    }
+
+    if (window.showToast) {
+      window.showToast(`${typeNames[type] || 'Zeichnung'} erstellt`, 'success')
+    }
+
+    // Auto-switch back to select mode after drawing
+    setTimeout(() => {
+      changeDrawingMode('simple_select')
+    }, 500)
+  })
+
+  // Drawing Updated
+  map.on('draw.update', (e) => {
+    console.log('🎨 Zeichnung aktualisiert')
+    updateDrawingsInStore()
+
+    if (window.showToast) {
+      window.showToast('Zeichnung aktualisiert', 'info')
+    }
+  })
+
+  // Drawing Deleted
+  map.on('draw.delete', (e) => {
+    console.log('🎨 Zeichnung gelöscht')
+    updateDrawingsInStore()
+
+    if (window.showToast) {
+      window.showToast(`${e.features.length} Zeichnung(en) gelöscht`, 'warning')
+    }
+  })
+
+  // Drawing Mode Changed
+  map.on('draw.modechange', (e) => {
+    console.log('🎨 Draw Mode Changed:', e.mode)
+    updateMapCursor(e.mode)
+  })
+
+  // Selection Changed
+  map.on('draw.selectionchange', (e) => {
+    const selectedCount = e.features.length
+    console.log(`🎯 ${selectedCount} Zeichnung(en) ausgewählt`)
+  })
+}
+
+// 🎨 Drawing Mode Management
+const changeDrawingMode = (mode) => {
+  if (!draw) {
+    console.warn('❌ Draw system not initialized')
+    return
+  }
+
+  try {
+    console.log(`🎨 Ändere Zeichenmodus zu: ${mode}`)
+
+    // Set the drawing mode
+    draw.changeMode(mode)
+
+    // Update cursor based on mode
+    updateMapCursor(mode)
+
+    // Show mode feedback
+    showDrawingModeToast(mode)
+  } catch (error) {
+    console.error('❌ Fehler beim Zeichenmodus-Wechsel:', error)
+  }
+}
+
+// 🎨 Update Map Cursor
+const updateMapCursor = (mode) => {
+  const canvas = map.getCanvas()
+
+  switch (mode) {
+    case 'draw_point':
+      canvas.style.cursor = 'crosshair'
+      break
+    case 'draw_line_string':
+      canvas.style.cursor = 'copy'
+      break
+    case 'draw_polygon':
+      canvas.style.cursor = 'crosshair'
+      break
+    case 'simple_select':
+    default:
+      canvas.style.cursor = ''
+      break
+  }
+}
+
+// 🎨 Show Drawing Mode Toast
+const showDrawingModeToast = (mode) => {
+  const messages = {
+    simple_select: 'Auswahlmodus aktiviert',
+    draw_point: 'Punkt-Zeichenmodus aktiviert - Klicken Sie auf die Karte',
+    draw_line_string:
+      'Linien-Zeichenmodus aktiviert - Klicken Sie um Punkte zu setzen, Doppelklick zum Beenden',
+    draw_polygon:
+      'Polygon-Zeichenmodus aktiviert - Klicken Sie um Ecken zu setzen, Doppelklick zum Beenden',
+  }
+
+  const message = messages[mode] || 'Zeichenmodus geändert'
+
+  if (window.showToast) {
+    window.showToast(message, 'info', 3000)
+  }
+}
+
+// 🎨 Update Drawing Styles
+const updateDrawingStyles = (styles) => {
+  currentDrawingStyles = { ...currentDrawingStyles, ...styles }
+
+  if (draw && map.getStyle()) {
+    try {
+      // Get current drawings
+      const currentDrawings = draw.getAll()
+
+      // Remove and re-add draw control with new styles
+      map.removeControl(draw)
+
+      // Re-initialize with new styles
+      draw = new MapboxDraw({
+        displayControlsDefault: false,
+        controls: {
+          polygon: false,
+          line_string: false,
+          point: false,
+          trash: false,
+        },
+        defaultMode: 'simple_select',
+        styles: getDrawStyles(),
+      })
+
+      map.addControl(draw, 'top-left')
+
+      // Re-add drawings
+      if (currentDrawings.features.length > 0) {
+        currentDrawings.features.forEach((feature) => {
+          draw.add(feature)
+        })
+      }
+
+      console.log('🎨 Zeichenstile aktualisiert:', currentDrawingStyles)
+
+      if (window.showToast) {
+        window.showToast('Zeichenstile angewendet', 'success')
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Stil-Update:', error)
+    }
+  }
+}
+
+// 🎨 Clear All Drawings
+const clearAllDrawings = () => {
+  if (draw) {
+    draw.deleteAll()
+    updateDrawingsInStore()
+    console.log('🗑️ Alle Zeichnungen gelöscht')
+  }
+}
+
+// 🎨 Import Drawings
+const importDrawings = (drawingsData) => {
+  if (!draw || !drawingsData.features) {
+    console.warn('❌ Cannot import drawings')
+    return
+  }
+
+  try {
+    // Clear existing drawings
+    draw.deleteAll()
+
+    // Add imported drawings
+    drawingsData.features.forEach((feature) => {
+      draw.add(feature)
+    })
+
+    // Update store
+    updateDrawingsInStore()
+
+    console.log(`📥 ${drawingsData.features.length} Zeichnungen importiert`)
+
+    if (window.showToast) {
+      window.showToast(`${drawingsData.features.length} Zeichnungen importiert`, 'success')
+    }
+  } catch (error) {
+    console.error('❌ Import error:', error)
+    if (window.showToast) {
+      window.showToast('Fehler beim Importieren', 'error')
+    }
+  }
+}
+
+// 🎨 Get Drawing Statistics
+const getDrawingStats = () => {
+  if (!draw) return { total: 0, points: 0, lines: 0, polygons: 0 }
+
+  const features = draw.getAll().features
+
+  return {
+    total: features.length,
+    points: features.filter((f) => f.geometry.type === 'Point').length,
+    lines: features.filter((f) => f.geometry.type === 'LineString').length,
+    polygons: features.filter((f) => f.geometry.type === 'Polygon').length,
+  }
+}
+
+// 🎨 Event Listeners für Sidebar Communication
+const setupDrawingEventListeners = () => {
+  // Drawing Mode Changed
+  window.addEventListener('drawing-mode-changed', (event) => {
+    const { mode } = event.detail
+    changeDrawingMode(mode)
+  })
+
+  // Drawing Styles Changed
+  window.addEventListener('drawing-styles-changed', (event) => {
+    const { styles } = event.detail
+    updateDrawingStyles(styles)
+  })
+
+  // Clear Drawings
+  window.addEventListener('clear-drawings', () => {
+    clearAllDrawings()
+  })
+
+  // Import Drawings
+  window.addEventListener('import-drawings', (event) => {
+    const { drawings } = event.detail
+    importDrawings(drawings)
+  })
+
+  console.log('🎨 Drawing Event Listeners eingerichtet')
 }
 
 // 📊 Update Drawings in Store
@@ -359,524 +609,329 @@ const loadDrawingsFromStore = () => {
   }
 }
 
+// 🎯 Map Events Setup
+const setupMapEvents = () => {
+  console.log('🎯 Setup Map Events für Position Picking...')
+
+  // Hauptsächlicher Map Click Handler
+  map.on('click', (e) => {
+    console.log('🗺️ Map Click:', e.lngLat)
+
+    // Position Picking für Hydranten/POI/Marker
+    if (uiStore.isPickingPosition) {
+      handlePositionPick(e.lngLat)
+      return
+    }
+
+    // Normale Map Clicks
+    console.log('🗺️ Normal map click')
+  })
+
+  // Layer Click Events
+  map.on('click', 'hydrants-layer', (e) => {
+    const hydrant = e.features[0].properties
+    console.log('🚒 Hydrant geklickt:', hydrant)
+    showHydrantPopup(e.features[0], e.lngLat)
+    hydrantsStore.selectHydrant(hydrant.id)
+  })
+
+  map.on('click', 'pois-layer', (e) => {
+    const poi = e.features[0].properties
+    console.log('🏭 POI geklickt:', poi)
+    showPOIPopup(e.features[0], e.lngLat)
+  })
+
+  map.on('click', 'markers-layer', (e) => {
+    const marker = e.features[0].properties
+    console.log('📍 Marker geklickt:', marker)
+    showMarkerPopup(e.features[0], e.lngLat)
+  })
+
+  // Cursor change events
+  map.on('mouseenter', 'hydrants-layer', () => {
+    map.getCanvas().style.cursor = 'pointer'
+  })
+
+  map.on('mouseleave', 'hydrants-layer', () => {
+    map.getCanvas().style.cursor = ''
+  })
+
+  map.on('mouseenter', 'pois-layer', () => {
+    map.getCanvas().style.cursor = 'pointer'
+  })
+
+  map.on('mouseleave', 'pois-layer', () => {
+    map.getCanvas().style.cursor = ''
+  })
+
+  map.on('mouseenter', 'markers-layer', () => {
+    map.getCanvas().style.cursor = 'pointer'
+  })
+
+  map.on('mouseleave', 'markers-layer', () => {
+    map.getCanvas().style.cursor = ''
+  })
+}
+
+// 🎯 Handle Position Picking
+const handlePositionPick = (lngLat) => {
+  console.log('🎯 Position gepickt:', lngLat)
+
+  try {
+    if (uiStore.isAddingHydrant) {
+      const newHydrant = hydrantsStore.addHydrant({
+        ...uiStore.pendingHydrantData,
+        lng: lngLat.lng,
+        lat: lngLat.lat,
+      })
+      console.log('✅ Hydrant hinzugefügt:', newHydrant)
+      emit('position-picked', { type: 'hydrant', data: newHydrant })
+    }
+
+    if (uiStore.isAddingPOI) {
+      const newPOI = poiStore.addPOI({
+        ...uiStore.pendingPOIData,
+        lng: lngLat.lng,
+        lat: lngLat.lat,
+      })
+      console.log('✅ POI hinzugefügt:', newPOI)
+      emit('position-picked', { type: 'poi', data: newPOI })
+    }
+
+    if (uiStore.isAddingMarker) {
+      const newMarker = markersStore.addMarker({
+        ...uiStore.pendingMarkerData,
+        lng: lngLat.lng,
+        lat: lngLat.lat,
+      })
+      console.log('✅ Marker hinzugefügt:', newMarker)
+      emit('position-picked', { type: 'marker', data: newMarker })
+    }
+
+    // Cursor zurücksetzen
+    map.getCanvas().style.cursor = ''
+  } catch (error) {
+    console.error('❌ Fehler beim Position Picking:', error)
+    uiStore.resetPositionPicking()
+  }
+}
+
 // 🚒 Hydrant Layer
 const addHydrantLayer = () => {
   console.log('🚒 Füge Hydrant Layer hinzu...')
 
-  // Hydrant GeoJSON erstellen
-  const hydrantGeoJSON = {
-    type: 'FeatureCollection',
-    features: hydrantsStore.hydrants.map((hydrant) => ({
+  try {
+    map.addSource('hydrants', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [],
+      },
+    })
+
+    map.addLayer({
+      id: 'hydrants-layer',
+      type: 'circle',
+      source: 'hydrants',
+      paint: {
+        'circle-radius': [
+          'case',
+          ['==', ['get', 'status'], 'ok'],
+          8,
+          ['==', ['get', 'status'], 'wartung'],
+          10,
+          ['==', ['get', 'status'], 'defekt'],
+          12,
+          8,
+        ],
+        'circle-color': [
+          'case',
+          ['==', ['get', 'status'], 'ok'],
+          '#2ed573',
+          ['==', ['get', 'status'], 'wartung'],
+          '#ffa502',
+          ['==', ['get', 'status'], 'defekt'],
+          '#ff4757',
+          '#cccccc',
+        ],
+        'circle-stroke-width': 3,
+        'circle-stroke-color': '#ffffff',
+      },
+    })
+
+    refreshHydrantLayer()
+    console.log('✅ Hydrant Layer hinzugefügt')
+  } catch (error) {
+    console.error('❌ Hydrant Layer Fehler:', error)
+  }
+}
+
+const refreshHydrantLayer = () => {
+  if (map.getSource('hydrants')) {
+    const features = hydrantsStore.hydrants.map((hydrant) => ({
       type: 'Feature',
       geometry: {
         type: 'Point',
         coordinates: [hydrant.lng, hydrant.lat],
       },
-      properties: {
-        id: hydrant.id,
-        area: hydrant.area,
-        status: hydrant.status || 'ok',
-        type: hydrant.type,
-        lastService: hydrant.lastService,
-        nextService: hydrant.nextService,
-        title: `Hydrant #${hydrant.id}`,
-      },
-    })),
-  }
+      properties: hydrant,
+    }))
 
-  // Source hinzufügen
-  map.addSource('hydrants', {
-    type: 'geojson',
-    data: hydrantGeoJSON,
-    cluster: true,
-    clusterMaxZoom: 14,
-    clusterRadius: 50,
-  })
-
-  // Cluster Layer
-  map.addLayer({
-    id: 'clusters',
-    type: 'circle',
-    source: 'hydrants',
-    filter: ['has', 'point_count'],
-    paint: {
-      'circle-color': ['step', ['get', 'point_count'], '#00ff88', 10, '#ff8800', 30, '#ff4444'],
-      'circle-radius': ['step', ['get', 'point_count'], 15, 10, 20, 30, 25],
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#ffffff',
-    },
-  })
-
-  // Cluster Count
-  map.addLayer({
-    id: 'cluster-count',
-    type: 'symbol',
-    source: 'hydrants',
-    filter: ['has', 'point_count'],
-    layout: {
-      'text-field': '{point_count_abbreviated}',
-      'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-      'text-size': 12,
-    },
-    paint: {
-      'text-color': '#000000',
-    },
-  })
-
-  // Individual Hydrants
-  map.addLayer({
-    id: 'hydrant-points',
-    type: 'circle',
-    source: 'hydrants',
-    filter: ['!', ['has', 'point_count']],
-    paint: {
-      'circle-color': [
-        'match',
-        ['get', 'status'],
-        'ok',
-        '#00ff00',
-        'wartung',
-        '#ffff00',
-        'defekt',
-        '#ff0000',
-        '#888888',
-      ],
-      'circle-radius': 8,
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#ffffff',
-    },
-  })
-
-  // Hydrant Symbols
-  map.addLayer({
-    id: 'hydrant-symbols',
-    type: 'symbol',
-    source: 'hydrants',
-    filter: ['!', ['has', 'point_count']],
-    layout: {
-      'text-field': '🚒',
-      'text-size': 16,
-      'text-allow-overlap': true,
-    },
-  })
-
-  // Hydrant Events Setup
-  setupHydrantEvents()
-}
-
-// 🚒 Hydrant Events Setup
-const setupHydrantEvents = () => {
-  map.on('click', 'clusters', (e) => {
-    if (uiStore.isPickingPosition) return
-
-    const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] })
-    const clusterId = features[0].properties.cluster_id
-    map.getSource('hydrants').getClusterExpansionZoom(clusterId, (err, zoom) => {
-      if (err) return
-      map.easeTo({
-        center: features[0].geometry.coordinates,
-        zoom: zoom,
-      })
+    map.getSource('hydrants').setData({
+      type: 'FeatureCollection',
+      features,
     })
-  })
-
-  map.on('click', 'hydrant-points', (e) => {
-    if (uiStore.isPickingPosition) return
-
-    const feature = e.features[0]
-    const hydrantId = parseInt(feature.properties.id)
-    hydrantsStore.selectHydrant(hydrantId)
-    showHydrantPopup(feature, e.lngLat)
-
-    emit('hydrant-selected', hydrantId)
-  })
-
-  // Cursor Events
-  map.on('mouseenter', 'clusters', () => {
-    if (!uiStore.isPickingPosition) {
-      map.getCanvas().style.cursor = 'pointer'
-    }
-  })
-
-  map.on('mouseleave', 'clusters', () => {
-    if (!uiStore.isPickingPosition) {
-      map.getCanvas().style.cursor = ''
-    }
-  })
-
-  map.on('mouseenter', 'hydrant-points', () => {
-    if (!uiStore.isPickingPosition) {
-      map.getCanvas().style.cursor = 'pointer'
-    }
-  })
-
-  map.on('mouseleave', 'hydrant-points', () => {
-    if (!uiStore.isPickingPosition) {
-      map.getCanvas().style.cursor = ''
-    }
-  })
+  }
 }
 
-// 🏭 POI Layer hinzufügen - NUR Category Layer verwenden
+// 🏭 POI Layer
 const addPOILayer = () => {
-  console.log('🏭 Füge POI Category Layer hinzu...')
+  console.log('🏭 Füge POI Layer hinzu...')
 
-  // POI GeoJSON erstellen
-  const poiGeoJSON = {
-    type: 'FeatureCollection',
-    features: poiStore.pois.map((poi) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [poi.lng, poi.lat],
+  try {
+    map.addSource('pois', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [],
       },
-      properties: {
-        id: poi.id,
-        name: poi.name,
-        category: poi.category,
-        description: poi.description,
-        priority: poi.priority || 'normal',
-        title: poi.name,
-      },
-    })),
-  }
+    })
 
-  // POI Source hinzufügen
-  map.addSource('pois', {
-    type: 'geojson',
-    data: poiGeoJSON,
-  })
-
-  // ✅ NUR kategorie-spezifische Layer erstellen (KEIN Haupt-POI Layer!)
-  Object.keys(poiCategories).forEach((category) => {
-    // POI Points für diese Kategorie
     map.addLayer({
-      id: `poi-${category}`,
+      id: 'pois-layer',
       type: 'circle',
       source: 'pois',
-      filter: ['==', ['get', 'category'], category],
       paint: {
-        'circle-color': poiCategories[category].color,
         'circle-radius': 10,
+        'circle-color': [
+          'case',
+          ['==', ['get', 'category'], 'gas_station'],
+          '#ff6b35',
+          ['==', ['get', 'category'], 'windmill'],
+          '#74c0fc',
+          ['==', ['get', 'category'], 'power_plant'],
+          '#ffd43b',
+          ['==', ['get', 'category'], 'oil_pump'],
+          '#495057',
+          ['==', ['get', 'category'], 'tanks'],
+          '#20c997',
+          '#cccccc',
+        ],
         'circle-stroke-width': 2,
         'circle-stroke-color': '#ffffff',
       },
     })
 
-    // POI Labels für diese Kategorie
-    map.addLayer({
-      id: `poi-${category}-labels`,
-      type: 'symbol',
-      source: 'pois',
-      filter: ['==', ['get', 'category'], category],
-      layout: {
-        'text-field': poiCategories[category].icon,
-        'text-size': 20,
-        'text-allow-overlap': true,
-        'text-offset': [0, 0],
-      },
-    })
-
-    // POI Namen für diese Kategorie (bei höherem Zoom)
-    map.addLayer({
-      id: `poi-${category}-names`,
-      type: 'symbol',
-      source: 'pois',
-      filter: ['==', ['get', 'category'], category],
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-        'text-size': 12,
-        'text-offset': [0, 2],
-        'text-anchor': 'top',
-      },
-      paint: {
-        'text-color': '#ffffff',
-        'text-halo-color': '#000000',
-        'text-halo-width': 1,
-      },
-      minzoom: 3,
-    })
-  })
-
-  // ✅ Click Events für ALLE Category Layer
-  setupPOIEvents()
-}
-
-// ✅ KORRIGIERTE POI Events Setup
-const setupPOIEvents = () => {
-  Object.keys(poiCategories).forEach((category) => {
-    // Click Events für jeden Category Layer
-    map.on('click', `poi-${category}`, (e) => {
-      if (uiStore.isPickingPosition) return
-
-      const feature = e.features[0]
-      const poiId = parseInt(feature.properties.id)
-      poiStore.selectPOI(poiId)
-      showPOIPopup(feature, e.lngLat)
-    })
-
-    // Hover Effects für jeden Category Layer
-    map.on('mouseenter', `poi-${category}`, () => {
-      if (!uiStore.isPickingPosition) {
-        map.getCanvas().style.cursor = 'pointer'
-      }
-    })
-
-    map.on('mouseleave', `poi-${category}`, () => {
-      if (!uiStore.isPickingPosition) {
-        map.getCanvas().style.cursor = ''
-      }
-    })
-  })
-}
-
-// 📍 Markers Layer hinzufügen
-const addMarkersLayer = () => {
-  console.log('📍 Füge Markers Layer hinzu...')
-
-  const markersGeoJSON = {
-    type: 'FeatureCollection',
-    features: markersStore.markers.map((marker) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [marker.lng, marker.lat],
-      },
-      properties: {
-        id: marker.id,
-        name: marker.name,
-        category: marker.category,
-        description: marker.description,
-      },
-    })),
-  }
-
-  // Markers Source hinzufügen
-  map.addSource('markers', {
-    type: 'geojson',
-    data: markersGeoJSON,
-  })
-
-  // Markers Layer
-  map.addLayer({
-    id: 'marker-points',
-    type: 'circle',
-    source: 'markers',
-    paint: {
-      'circle-color': [
-        'match',
-        ['get', 'category'],
-        'route',
-        '#4287f5',
-        'assembly',
-        '#ff8800',
-        'warning',
-        '#ff4757',
-        '#9d4edd', // default purple
-      ],
-      'circle-radius': 8,
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#ffffff',
-    },
-  })
-
-  // Marker Symbols
-  map.addLayer({
-    id: 'marker-symbols',
-    type: 'symbol',
-    source: 'markers',
-    layout: {
-      'text-field': [
-        'match',
-        ['get', 'category'],
-        'route',
-        '🛤️',
-        'assembly',
-        '🏟️',
-        'warning',
-        '⚠️',
-        '⭐', // default star
-      ],
-      'text-size': 16,
-      'text-allow-overlap': true,
-    },
-  })
-
-  // Marker Events Setup
-  setupMarkerEvents()
-}
-
-// 📍 Marker Events Setup
-const setupMarkerEvents = () => {
-  map.on('click', 'marker-points', (e) => {
-    if (uiStore.isPickingPosition) return
-
-    const feature = e.features[0]
-    const markerId = parseInt(feature.properties.id)
-    markersStore.selectMarker(markerId)
-    showMarkerPopup(feature, e.lngLat)
-  })
-
-  map.on('mouseenter', 'marker-points', () => {
-    if (!uiStore.isPickingPosition) {
-      map.getCanvas().style.cursor = 'pointer'
-    }
-  })
-
-  map.on('mouseleave', 'marker-points', () => {
-    if (!uiStore.isPickingPosition) {
-      map.getCanvas().style.cursor = ''
-    }
-  })
-}
-
-// ✅ KORRIGIERT: Layer Toggle mit POI Categories
-const toggleLayer = (layerName, visible) => {
-  if (!map) return
-
-  const visibility = visible ? 'visible' : 'none'
-
-  try {
-    switch (layerName) {
-      case 'hydrants':
-        ;['hydrant-points', 'hydrant-symbols', 'clusters', 'cluster-count'].forEach((id) => {
-          if (map.getLayer(id)) {
-            map.setLayoutProperty(id, 'visibility', visibility)
-          }
-        })
-        break
-
-      case 'markers':
-        ;['marker-points', 'marker-symbols'].forEach((id) => {
-          if (map.getLayer(id)) {
-            map.setLayoutProperty(id, 'visibility', visibility)
-          }
-        })
-        break
-
-      // ✅ KORRIGIERT: POI Category Toggles - alle Layer einer Kategorie
-      case 'gas_station':
-      case 'windmill':
-      case 'power_plant':
-      case 'oil_pump':
-      case 'tanks':
-        ;[`poi-${layerName}`, `poi-${layerName}-labels`, `poi-${layerName}-names`].forEach((id) => {
-          if (map.getLayer(id)) {
-            map.setLayoutProperty(id, 'visibility', visibility)
-          }
-        })
-        break
-
-      case 'drawings':
-        if (draw) {
-          if (visible) {
-            draw.changeMode('simple_select')
-          } else {
-            draw.changeMode('static')
-          }
-        }
-        break
-
-      default:
-        console.warn(`⚠️ Unbekannter Layer: ${layerName}`)
-    }
-
-    console.log(`🎛️ Layer ${layerName}: ${visible ? 'AN' : 'AUS'}`)
+    refreshPOILayer()
+    console.log('✅ POI Layer hinzugefügt')
   } catch (error) {
-    console.error(`❌ Layer toggle error for ${layerName}:`, error)
+    console.error('❌ POI Layer Fehler:', error)
   }
-}
-
-// 🔄 Refresh Layer Functions
-const refreshHydrantLayer = () => {
-  if (!map || !map.getSource('hydrants')) return
-
-  const hydrantGeoJSON = {
-    type: 'FeatureCollection',
-    features: hydrantsStore.hydrants.map((hydrant) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [hydrant.lng, hydrant.lat],
-      },
-      properties: {
-        id: hydrant.id,
-        area: hydrant.area,
-        status: hydrant.status || 'ok',
-        type: hydrant.type,
-        lastService: hydrant.lastService,
-        nextService: hydrant.nextService,
-        title: `Hydrant #${hydrant.id}`,
-      },
-    })),
-  }
-
-  map.getSource('hydrants').setData(hydrantGeoJSON)
 }
 
 const refreshPOILayer = () => {
-  if (!map || !map.getSource('pois')) return
-
-  const poiGeoJSON = {
-    type: 'FeatureCollection',
-    features: poiStore.pois.map((poi) => ({
+  if (map.getSource('pois')) {
+    const features = poiStore.pois.map((poi) => ({
       type: 'Feature',
       geometry: {
         type: 'Point',
         coordinates: [poi.lng, poi.lat],
       },
-      properties: {
-        id: poi.id,
-        name: poi.name,
-        category: poi.category,
-        description: poi.description,
-        priority: poi.priority || 'normal',
-        title: poi.name,
-      },
-    })),
-  }
+      properties: poi,
+    }))
 
-  map.getSource('pois').setData(poiGeoJSON)
+    map.getSource('pois').setData({
+      type: 'FeatureCollection',
+      features,
+    })
+  }
+}
+
+// 📍 Markers Layer
+const addMarkersLayer = () => {
+  console.log('📍 Füge Markers Layer hinzu...')
+
+  try {
+    map.addSource('markers', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [],
+      },
+    })
+
+    map.addLayer({
+      id: 'markers-layer',
+      type: 'circle',
+      source: 'markers',
+      paint: {
+        'circle-radius': 8,
+        'circle-color': [
+          'case',
+          ['==', ['get', 'category'], 'route'],
+          '#4287f5',
+          ['==', ['get', 'category'], 'assembly'],
+          '#ff8800',
+          ['==', ['get', 'category'], 'warning'],
+          '#ff4757',
+          ['==', ['get', 'category'], 'star'],
+          '#9d4edd',
+          ['==', ['get', 'category'], 'staging'],
+          '#2ed573',
+          ['==', ['get', 'category'], 'command'],
+          '#ff6b35',
+          '#cccccc',
+        ],
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#ffffff',
+      },
+    })
+
+    refreshMarkersLayer()
+    console.log('✅ Markers Layer hinzugefügt')
+  } catch (error) {
+    console.error('❌ Markers Layer Fehler:', error)
+  }
 }
 
 const refreshMarkersLayer = () => {
-  if (!map || !map.getSource('markers')) return
-
-  const markersGeoJSON = {
-    type: 'FeatureCollection',
-    features: markersStore.markers.map((marker) => ({
+  if (map.getSource('markers')) {
+    const features = markersStore.markers.map((marker) => ({
       type: 'Feature',
       geometry: {
         type: 'Point',
         coordinates: [marker.lng, marker.lat],
       },
-      properties: {
-        id: marker.id,
-        name: marker.name,
-        category: marker.category,
-        description: marker.description,
-      },
-    })),
-  }
+      properties: marker,
+    }))
 
-  map.getSource('markers').setData(markersGeoJSON)
+    map.getSource('markers').setData({
+      type: 'FeatureCollection',
+      features,
+    })
+  }
 }
 
 // 💬 Popup Functions
 const showHydrantPopup = (feature, lngLat) => {
   const props = feature.properties
 
+  const statusColors = {
+    ok: '#2ed573',
+    wartung: '#ffa502',
+    defekt: '#ff4757',
+  }
+
   const popupContent = `
     <div style="color: #ffffff; font-weight: bold; margin-bottom: 8px;">
-      🚒 ${props.title}
+      🚒 Hydrant #${props.id}
     </div>
     <div style="font-size: 12px; line-height: 1.4;">
-      <strong>Gebiet:</strong> ${props.area || 'Unbekannt'}<br>
-      <strong>Status:</strong> ${props.status}<br>
-      <strong>Typ:</strong> ${props.type || 'Unbekannt'}<br>
-      <strong>Letzter Service:</strong> ${props.lastService || 'Nicht gesetzt'}<br>
-      <strong>Nächster Service:</strong> ${props.nextService || 'Nicht gesetzt'}
+      <strong>Gebiet:</strong> ${props.area}<br>
+      <strong>Typ:</strong> ${props.type}<br>
+      <strong>Status:</strong> <span style="color: ${statusColors[props.status] || '#cccccc'}">${props.status}</span><br>
+      <strong>Letzte Wartung:</strong> ${props.lastService || 'Unbekannt'}<br>
+      <strong>Nächste Wartung:</strong> ${props.nextService || 'Nicht geplant'}
     </div>
   `
 
@@ -891,8 +946,7 @@ const showPOIPopup = (feature, lngLat) => {
       🏭 ${props.name}
     </div>
     <div style="font-size: 12px; line-height: 1.4;">
-      <strong>Kategorie:</strong> ${props.category}<br>
-      <strong>Priorität:</strong> ${props.priority}<br>
+      <strong>Kategorie:</strong> ${poiCategories[props.category]?.name || props.category}<br>
       <strong>Beschreibung:</strong> ${props.description || 'Keine Beschreibung'}
     </div>
   `
@@ -908,7 +962,7 @@ const showMarkerPopup = (feature, lngLat) => {
       📍 ${props.name}
     </div>
     <div style="font-size: 12px; line-height: 1.4;">
-      <strong>Kategorie:</strong> ${props.category}<br>
+      <strong>Kategorie:</strong> ${markerCategories[props.category]?.name || props.category}<br>
       <strong>Beschreibung:</strong> ${props.description || 'Keine Beschreibung'}
     </div>
   `
@@ -916,7 +970,14 @@ const showMarkerPopup = (feature, lngLat) => {
   new maplibregl.Popup().setLngLat(lngLat).setHTML(popupContent).addTo(map)
 }
 
-// ✅ KORRIGIERT: Watchers ohne Duplikate
+// 🎛️ Layer Toggle Management
+const toggleLayer = (layerName, visible) => {
+  if (map && map.getLayer(layerName)) {
+    map.setLayoutProperty(layerName, 'visibility', visible ? 'visible' : 'none')
+  }
+}
+
+// 👀 Watchers
 watch(
   () => hydrantsStore.hydrants,
   () => {
@@ -945,7 +1006,15 @@ watch(
   () => mapStore.layers,
   (newLayers) => {
     Object.keys(newLayers).forEach((layerName) => {
-      toggleLayer(layerName, newLayers[layerName])
+      const mapLayerName =
+        layerName === 'hydrants'
+          ? 'hydrants-layer'
+          : layerName === 'pois'
+            ? 'pois-layer'
+            : layerName === 'markers'
+              ? 'markers-layer'
+              : layerName
+      toggleLayer(mapLayerName, newLayers[layerName])
     })
   },
   { deep: true },
@@ -954,8 +1023,19 @@ watch(
 watch(
   () => mapStore.mapStyle,
   (newStyle) => {
-    if (map) {
-      mapStore.setMapStyle(newStyle)
+    if (map && newStyle) {
+      // Switch map style
+      const layers = ['road-layer', 'satellite-layer', 'atlas-layer']
+      layers.forEach((layer) => {
+        if (map.getLayer(layer)) {
+          map.setLayoutProperty(layer, 'visibility', 'none')
+        }
+      })
+
+      const targetLayer = `${newStyle}-layer`
+      if (map.getLayer(targetLayer)) {
+        map.setLayoutProperty(targetLayer, 'visibility', 'visible')
+      }
     }
   },
 )
@@ -971,7 +1051,22 @@ onUnmounted(() => {
   }
 })
 
-// 📤 Expose Methods
+// 🔧 Expose Drawing Functions (für debugging)
+const exposeDrawingFunctions = () => {
+  window.debugDrawing = {
+    changeMode: changeDrawingMode,
+    updateStyles: updateDrawingStyles,
+    clearAll: clearAllDrawings,
+    getStats: getDrawingStats,
+    getCurrentStyles: () => currentDrawingStyles,
+    getDraw: () => draw,
+    getMap: () => map,
+  }
+
+  console.log('🔧 Debug: Drawing functions available as window.debugDrawing')
+}
+
+// 📤 Expose Methods für Parent Components
 defineExpose({
   map: () => map,
   draw: () => draw,
@@ -989,23 +1084,17 @@ defineExpose({
       map.fitBounds(bounds, { padding: 50, duration: 2000 })
     }
   },
-  setDrawingMode: (mode) => {
-    if (draw) {
-      draw.changeMode(mode)
-    }
-  },
-  clearAllDrawings: () => {
-    if (draw) {
-      draw.deleteAll()
-      updateDrawingsInStore()
-    }
-  },
+  setDrawingMode: changeDrawingMode,
+  clearAllDrawings,
   exportDrawings: () => {
     if (draw) {
       return draw.getAll()
     }
     return { type: 'FeatureCollection', features: [] }
   },
+  importDrawings,
+  updateDrawingStyles,
+  getDrawingStats,
 })
 </script>
 
@@ -1022,6 +1111,7 @@ defineExpose({
   border-radius: 12px !important;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
   backdrop-filter: blur(20px) !important;
+  display: none !important; /* Hide default controls */
 }
 
 :deep(.maplibregl-ctrl button) {
@@ -1042,10 +1132,26 @@ defineExpose({
   border: 1px solid var(--border-color) !important;
   border-radius: 12px !important;
   backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
 }
 
 :deep(.maplibregl-popup-close-button) {
   color: var(--text-primary) !important;
   font-size: 18px !important;
+  right: 8px !important;
+  top: 8px !important;
+}
+
+:deep(.maplibregl-popup-tip) {
+  border-top-color: var(--surface) !important;
+}
+
+/* Drawing Controls ausblenden */
+:deep(.mapbox-gl-draw_ctrl-draw-btn) {
+  display: none !important;
+}
+
+:deep(.mapbox-gl-draw_trash) {
+  display: none !important;
 }
 </style>

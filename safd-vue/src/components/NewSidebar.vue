@@ -1,4 +1,4 @@
-<!-- src/components/Sidebar.vue - MIT WARTUNGSÜBERSICHT -->
+<!-- src/components/Sidebar.vue - MIT ZEICHENTOOLS -->
 <template>
   <div class="sidebar" :class="{ open: isOpen }">
     <!-- Header -->
@@ -66,13 +66,11 @@
           </div>
         </div>
 
-        <!-- ✅ NEUER HYDRANT BUTTON -->
         <button v-if="userStore.isAdmin" @click="startAddingHydrant()" class="modern-button">
           <i class="fas fa-plus"></i>
           Neuen Hydranten hinzufügen
         </button>
 
-        <!-- ✅ WARTUNGSÜBERSICHT BUTTON - Jetzt funktional! -->
         <button @click="showMaintenanceModal" class="modern-button button-secondary">
           <i class="fas fa-wrench"></i>
           Wartungsübersicht
@@ -81,7 +79,7 @@
           </span>
         </button>
 
-        <!-- ✅ HYDRANTENLISTE MIT BEARBEITUNG -->
+        <!-- Hydrantenliste -->
         <div class="hydrant-list-section">
           <div class="section-header" @click="toggleHydrantList">
             <h4>Hydranten Liste</h4>
@@ -113,7 +111,6 @@
                 </div>
               </div>
               <div class="hydrant-actions">
-                <!-- ✅ BEARBEITEN BUTTON -->
                 <button
                   @click="openHydrantForm(hydrant)"
                   class="action-btn edit-btn"
@@ -192,34 +189,59 @@
         />
       </SidebarSection>
 
-      <!-- Drawing Tools -->
-      <SidebarSection title="Zeichentools" icon="fas fa-pen">
-        <div class="drawing-status">
-          <div class="status-indicator ready">
-            <i class="fas fa-check-circle"></i>
-            <span>Zeichentools bereit</span>
+      <!-- ✅ NEUE ZEICHENTOOLS SEKTION -->
+      <SidebarSection title="Zeichentools" icon="fas fa-pen" :expanded="false">
+        <!-- Drawing Status -->
+        <div class="drawing-status" :class="drawingStatusClass">
+          <div class="status-indicator">
+            <i :class="drawingStatusIcon"></i>
+            <div class="status-info">
+              <span class="status-text">{{ drawingStatusText }}</span>
+              <span class="status-mode">{{ currentDrawingMode }}</span>
+            </div>
           </div>
         </div>
 
-        <div class="control-group">
-          <label class="control-label">Zeichenmodus</label>
-          <select v-model="drawingMode" class="modern-select" @change="changeDrawingMode">
-            <option value="simple_select">Auswählen & Bearbeiten</option>
-            <option value="draw_point">Punkt zeichnen</option>
-            <option value="draw_line_string">Linie zeichnen</option>
-            <option value="draw_polygon">Polygon zeichnen</option>
-          </select>
+        <!-- Quick Mode Buttons -->
+        <div class="quick-modes">
+          <button
+            v-for="mode in quickModes"
+            :key="mode.value"
+            @click="setQuickDrawingMode(mode.value)"
+            class="quick-mode-btn"
+            :class="{ active: drawingMode === mode.value }"
+            :title="mode.tooltip"
+          >
+            <i :class="mode.icon"></i>
+          </button>
         </div>
 
-        <button class="modern-button button-warning" @click="clearAllDrawings">
-          <i class="fas fa-trash"></i>
-          Zeichnungen löschen
-        </button>
+        <!-- Drawing Controls -->
+        <div class="drawing-controls">
+          <button @click="openDrawingControls" class="modern-button button-purple">
+            <i class="fas fa-palette"></i>
+            Erweiterte Einstellungen
+          </button>
 
-        <button class="modern-button button-secondary" @click="exportDrawings">
-          <i class="fas fa-download"></i>
-          Exportieren
-        </button>
+          <div class="drawing-stats">
+            <div class="stat-row">
+              <span>Zeichnungen:</span>
+              <span class="stat-value">{{ drawingsCount }}</span>
+            </div>
+          </div>
+
+          <div class="drawing-actions">
+            <button @click="clearAllDrawings" class="modern-button button-warning">
+              <i class="fas fa-trash"></i>
+              Alle löschen
+            </button>
+
+            <button @click="exportDrawings" class="modern-button button-secondary">
+              <i class="fas fa-download"></i>
+              Exportieren
+            </button>
+          </div>
+        </div>
       </SidebarSection>
 
       <!-- Admin Login -->
@@ -236,7 +258,7 @@
     </div>
   </div>
 
-  <!-- ✅ MODALS -->
+  <!-- Modals -->
   <HydrantForm
     v-model="showHydrantForm"
     :hydrant="modalData.hydrant"
@@ -245,8 +267,17 @@
 
   <POIForm v-model="showPOIForm" :poi="modalData.poi" @poi-saved="onPOISaved" />
 
-  <!-- ✅ NEU: WARTUNGSÜBERSICHT MODAL -->
   <MaintenanceModal v-model="showMaintenanceOverview" @edit-hydrant="onMaintenanceEditHydrant" />
+
+  <!-- ✅ NEUE ZEICHENTOOLS MODAL -->
+  <DrawingControls
+    v-model="showDrawingControls"
+    @mode-changed="onDrawingModeChanged"
+    @styles-changed="onDrawingStylesChanged"
+    @clear-drawings="onClearDrawings"
+    @export-drawings="onExportDrawings"
+    @import-drawings="onImportDrawings"
+  />
 </template>
 
 <script setup>
@@ -262,7 +293,8 @@ import SidebarSection from './SidebarSection.vue'
 import ToggleSwitch from './ToggleSwitch.vue'
 import HydrantForm from './HydrantForm.vue'
 import POIForm from './POIForm.vue'
-import MaintenanceModal from './MaintenanceModal.vue' // ✅ NEU
+import MaintenanceModal from './MaintenanceModal.vue'
+import DrawingControls from './DrawingControls.vue' // ✅ NEU
 
 // 🎭 Props
 defineProps({
@@ -286,11 +318,36 @@ const modalData = ref({
 })
 const showHydrantForm = ref(false)
 const showPOIForm = ref(false)
-const showMaintenanceOverview = ref(false) // ✅ NEU
+const showMaintenanceOverview = ref(false)
+const showDrawingControls = ref(false) // ✅ NEU
 
 // 📊 Reactive Data
-const drawingMode = ref('simple_select')
+const drawingMode = ref('simple_select') // ✅ NEU: Zeichenmodus
 const showHydrantList = ref(false)
+
+// ✅ ZEICHENTOOLS KONFIGURATION
+const quickModes = [
+  {
+    value: 'simple_select',
+    icon: 'fas fa-mouse-pointer',
+    tooltip: 'Auswählen & Bearbeiten',
+  },
+  {
+    value: 'draw_point',
+    icon: 'fas fa-map-pin',
+    tooltip: 'Punkt zeichnen',
+  },
+  {
+    value: 'draw_line_string',
+    icon: 'fas fa-minus',
+    tooltip: 'Linie zeichnen',
+  },
+  {
+    value: 'draw_polygon',
+    icon: 'fas fa-draw-polygon',
+    tooltip: 'Polygon zeichnen',
+  },
+]
 
 // 🧮 Computed Properties
 const districts = computed(() => {
@@ -318,11 +375,10 @@ const filteredHydrants = computed(() => {
   return hydrants.slice(0, 10)
 })
 
-// ✅ ERWEITERTE HYDRANT STATS MIT WARTUNG
 const hydrantStats = computed(() => {
   const today = new Date()
   const maintenanceDue = hydrantsStore.hydrants.filter((h) => {
-    if (!h.nextService) return true // No service date = overdue
+    if (!h.nextService) return true
     return new Date(h.nextService) < today
   }).length
 
@@ -331,46 +387,70 @@ const hydrantStats = computed(() => {
   }
 })
 
+// ✅ ZEICHENTOOLS COMPUTED
+const drawingsCount = computed(() => {
+  return mapStore.drawings?.features?.length || 0
+})
+
+const drawingStatusClass = computed(() => {
+  switch (drawingMode.value) {
+    case 'simple_select':
+      return 'status-select'
+    case 'draw_point':
+      return 'status-point'
+    case 'draw_line_string':
+      return 'status-line'
+    case 'draw_polygon':
+      return 'status-polygon'
+    default:
+      return 'status-default'
+  }
+})
+
+const drawingStatusIcon = computed(() => {
+  switch (drawingMode.value) {
+    case 'simple_select':
+      return 'fas fa-mouse-pointer'
+    case 'draw_point':
+      return 'fas fa-map-pin'
+    case 'draw_line_string':
+      return 'fas fa-minus'
+    case 'draw_polygon':
+      return 'fas fa-draw-polygon'
+    default:
+      return 'fas fa-draw-polygon'
+  }
+})
+
+const drawingStatusText = computed(() => {
+  switch (drawingMode.value) {
+    case 'simple_select':
+      return 'Bereit'
+    case 'draw_point':
+      return 'Punkt Modus'
+    case 'draw_line_string':
+      return 'Linien Modus'
+    case 'draw_polygon':
+      return 'Polygon Modus'
+    default:
+      return 'Bereit'
+  }
+})
+
+const currentDrawingMode = computed(() => {
+  const mode = quickModes.find((m) => m.value === drawingMode.value)
+  return mode ? mode.tooltip : 'Unbekannt'
+})
+
 // 🎮 Methods
 const onMapStyleChange = () => {
   mapStore.setMapStyle(mapStore.mapStyle)
 }
 
-const changeDrawingMode = () => {
-  console.log(`🎨 Drawing Mode: ${drawingMode.value}`)
-}
-
-const clearAllDrawings = async () => {
-  const confirmed = await showConfirm('Alle Zeichnungen wirklich löschen?', 'Zeichnungen löschen')
-
-  if (confirmed) {
-    mapStore.drawings.features = []
-    mapStore.saveDrawings()
-    showToast('Alle Zeichnungen gelöscht', 'success')
-  }
-}
-
-const exportDrawings = () => {
-  const data = JSON.stringify(mapStore.drawings, null, 2)
-  const blob = new Blob([data], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `SAFD_Zeichnungen_${new Date().toISOString().split('T')[0]}.geojson`
-  link.click()
-
-  URL.revokeObjectURL(url)
-  showToast('Zeichnungen exportiert', 'success')
-}
-
-// ✅ WARTUNGSÜBERSICHT - Jetzt funktional!
 const showMaintenanceModal = () => {
   showMaintenanceOverview.value = true
-  console.log('🔧 Wartungsübersicht geöffnet')
 }
 
-// ✅ NEUE HYDRANTEN-FUNKTIONEN
 const toggleHydrantList = () => {
   showHydrantList.value = !showHydrantList.value
 }
@@ -393,16 +473,12 @@ const startAddingHydrant = () => {
   showToast('Klicke auf die Karte, um einen neuen Hydranten zu platzieren', 'info')
 }
 
-// ✅ BEARBEITUNGSFUNKTION
 const openHydrantForm = (hydrant = null) => {
   modalData.value.hydrant = hydrant
   showHydrantForm.value = true
-  console.log('📝 Hydrant-Form geöffnet:', hydrant ? `#${hydrant.id}` : 'Neu')
 }
 
-// ✅ HYDRANT AUS WARTUNGSÜBERSICHT BEARBEITEN
 const onMaintenanceEditHydrant = (hydrant) => {
-  console.log('🔧 Hydrant aus Wartungsübersicht bearbeiten:', hydrant.id)
   openHydrantForm(hydrant)
 }
 
@@ -415,7 +491,6 @@ const deleteHydrant = async (hydrantId) => {
   }
 }
 
-// ✅ WARTUNG PRÜFEN
 const isMaintenanceDue = (hydrant) => {
   if (!hydrant.nextService) return true
   return new Date(hydrant.nextService) < new Date()
@@ -448,8 +523,6 @@ const openPOIForm = (poi = null) => {
 }
 
 const onHydrantSaved = (hydrantData) => {
-  console.log('🚒 Hydrant gespeichert:', hydrantData)
-
   if (hydrantData.isNew) {
     uiStore.pendingHydrantData = hydrantData
     uiStore.isAddingHydrant = true
@@ -463,8 +536,6 @@ const onHydrantSaved = (hydrantData) => {
 }
 
 const onPOISaved = (poiData) => {
-  console.log('🏭 POI gespeichert:', poiData)
-
   if (poiData.isEditing) {
     poiStore.updatePOI(poiData.id, poiData)
   } else {
@@ -476,6 +547,101 @@ const onPOISaved = (poiData) => {
   showPOIForm.value = false
 }
 
+// ✅ ZEICHENTOOLS METHODS
+const openDrawingControls = () => {
+  showDrawingControls.value = true
+}
+
+const setQuickDrawingMode = (mode) => {
+  drawingMode.value = mode
+  // Emit event für MapContainer
+  emitDrawingModeChange(mode)
+  console.log(`🎨 Schneller Zeichenmodus: ${mode}`)
+}
+
+const onDrawingModeChanged = (mode) => {
+  drawingMode.value = mode
+  emitDrawingModeChange(mode)
+}
+
+const onDrawingStylesChanged = (styles) => {
+  // Emit styles to MapContainer
+  emitDrawingStylesChange(styles)
+  console.log('🎨 Zeichenstile geändert:', styles)
+}
+
+const onClearDrawings = () => {
+  mapStore.drawings.features = []
+  mapStore.saveDrawings()
+  emitClearDrawings()
+}
+
+const onExportDrawings = (drawings) => {
+  // Export logic already handled in DrawingControls
+  console.log('📥 Zeichnungen exportiert')
+}
+
+const onImportDrawings = (drawings) => {
+  if (drawings.features) {
+    mapStore.drawings = drawings
+    mapStore.saveDrawings()
+    emitImportDrawings(drawings)
+  }
+}
+
+const clearAllDrawings = async () => {
+  const confirmed = await showConfirm('Alle Zeichnungen wirklich löschen?', 'Zeichnungen löschen')
+
+  if (confirmed) {
+    onClearDrawings()
+    showToast('Alle Zeichnungen gelöscht', 'success')
+  }
+}
+
+const exportDrawings = () => {
+  const data = JSON.stringify(mapStore.drawings, null, 2)
+  const blob = new Blob([data], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `SAFD_Zeichnungen_${new Date().toISOString().split('T')[0]}.geojson`
+  link.click()
+
+  URL.revokeObjectURL(url)
+  showToast('Zeichnungen exportiert', 'success')
+}
+
+// ✅ PROVIDE DRAWING EVENTS für MapContainer
+const emitDrawingModeChange = (mode) => {
+  // Event für MapContainer
+  window.dispatchEvent(
+    new CustomEvent('drawing-mode-changed', {
+      detail: { mode },
+    }),
+  )
+}
+
+const emitDrawingStylesChange = (styles) => {
+  window.dispatchEvent(
+    new CustomEvent('drawing-styles-changed', {
+      detail: { styles },
+    }),
+  )
+}
+
+const emitClearDrawings = () => {
+  window.dispatchEvent(new CustomEvent('clear-drawings'))
+}
+
+const emitImportDrawings = (drawings) => {
+  window.dispatchEvent(
+    new CustomEvent('import-drawings', {
+      detail: { drawings },
+    }),
+  )
+}
+
 // 🔧 Utility Functions
 const showConfirm = async (message, title = 'Bestätigung') => {
   return new Promise((resolve) => {
@@ -485,24 +651,16 @@ const showConfirm = async (message, title = 'Bestätigung') => {
 }
 
 const showToast = (message, type = 'info', duration = 3000) => {
-  console.log(`🍞 Toast [${type}]: ${message}`)
-
   if (window.showToast) {
     window.showToast(message, type, duration)
   } else {
-    if (type === 'error') {
-      alert(`❌ ${message}`)
-    } else if (type === 'success') {
-      alert(`✅ ${message}`)
-    } else {
-      alert(`ℹ️ ${message}`)
-    }
+    console.log(`🍞 Toast [${type}]: ${message}`)
   }
 }
 
 // 🎬 Lifecycle
 onMounted(() => {
-  console.log('🎛️ Sidebar geladen')
+  console.log('🎛️ Sidebar mit Zeichentools geladen')
 })
 </script>
 
@@ -631,7 +789,17 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(255, 165, 2, 0.3);
 }
 
-/* ✅ URGENT BADGE für Wartungsbutton */
+/* ✅ NEUER LILA BUTTON für Zeichentools */
+.button-purple {
+  background: var(--accent-purple);
+  border-color: var(--accent-purple);
+}
+
+.button-purple:hover {
+  background: #8b3cbf;
+  box-shadow: 0 4px 12px rgba(157, 77, 221, 0.3);
+}
+
 .urgent-badge {
   position: absolute;
   top: -6px;
@@ -687,25 +855,6 @@ onMounted(() => {
   color: var(--primary-color);
 }
 
-.drawing-status {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 15px;
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.status-indicator.ready {
-  color: var(--success);
-}
-
 .stats-overview {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -721,7 +870,6 @@ onMounted(() => {
   transition: all 0.2s ease;
 }
 
-/* ✅ URGENT STATS */
 .stat-item.stat-urgent {
   background: rgba(255, 71, 87, 0.1);
   border: 1px solid var(--danger);
@@ -824,7 +972,6 @@ onMounted(() => {
   gap: 8px;
 }
 
-/* ✅ WARTUNGSWARNUNG */
 .maintenance-warning {
   color: var(--warning);
   animation: blink 1.5s infinite;
@@ -880,5 +1027,137 @@ onMounted(() => {
   border-color: var(--danger);
   color: var(--danger);
   background: rgba(255, 71, 87, 0.1);
+}
+
+/* ===== ✅ ZEICHENTOOLS STYLES ===== */
+.drawing-status {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 2px solid;
+  transition: all 0.3s ease;
+}
+
+.status-select {
+  background: rgba(66, 135, 245, 0.1);
+  border-color: var(--accent-blue);
+}
+
+.status-point {
+  background: rgba(46, 213, 115, 0.1);
+  border-color: var(--success);
+}
+
+.status-line {
+  background: rgba(255, 165, 2, 0.1);
+  border-color: var(--warning);
+}
+
+.status-polygon {
+  background: rgba(157, 77, 221, 0.1);
+  border-color: var(--accent-purple);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-indicator i {
+  font-size: 20px;
+  color: var(--accent-blue);
+}
+
+.status-select .status-indicator i {
+  color: var(--accent-blue);
+}
+.status-point .status-indicator i {
+  color: var(--success);
+}
+.status-line .status-indicator i {
+  color: var(--warning);
+}
+.status-polygon .status-indicator i {
+  color: var(--accent-purple);
+}
+
+.status-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.status-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.status-mode {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.quick-modes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.quick-mode-btn {
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.quick-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.quick-mode-btn.active {
+  background: rgba(157, 77, 221, 0.2);
+  border-color: var(--accent-purple);
+  color: var(--accent-purple);
+}
+
+.drawing-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.drawing-stats {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.stat-row .stat-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.drawing-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 </style>
