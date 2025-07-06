@@ -961,8 +961,6 @@ const addMarkersLayer = () => {
   try {
     // 📸 Icons aus assets dynamisch importieren
     const loadIconsFromAssets = async () => {
-      const iconMap = {}
-
       try {
         // Icons dynamisch importieren
         const routeIcon = await import('@/assets/icons/road.png')
