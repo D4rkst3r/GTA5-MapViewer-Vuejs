@@ -1,4 +1,4 @@
-<!-- src/components/MapContainer.vue (KORREKTE VERSION) -->
+<!-- src/components/MapContainer.vue (VOLLSTÄNDIG KORRIGIERT) -->
 <template>
   <div id="map" ref="mapContainer" class="map-container"></div>
 </template>
@@ -35,11 +35,11 @@ const geoBounds = [-180, -85, 180, 85]
 
 // 🏭 POI Categories für Category Layer
 const poiCategories = {
-  gas_station: { name: 'Tankstelle', color: '#ff6b35', icon: 'fas fa-gas-pump' },
-  windmill: { name: 'Windrad', color: '#74c0fc', icon: 'fas fa-wind' },
-  power_plant: { name: 'Umspannwerk', color: '#ffd43b', icon: 'fas fa-bolt' },
-  oil_pump: { name: 'Ölpumpe', color: '#495057', icon: 'fas fa-oil-well' },
-  tanks: { name: 'Tanks', color: '#20c997', icon: 'fas fa-database' },
+  gas_station: { name: 'Tankstelle', color: '#ff6b35', icon: '⛽' },
+  windmill: { name: 'Windrad', color: '#74c0fc', icon: '💨' },
+  power_plant: { name: 'Umspannwerk', color: '#ffd43b', icon: '⚡' },
+  oil_pump: { name: 'Ölpumpe', color: '#495057', icon: '🛢️' },
+  tanks: { name: 'Tanks', color: '#20c997', icon: '🛢️' },
 }
 
 // 🎨 Map Style Configuration
@@ -250,7 +250,7 @@ const handlePositionPick = (lngLat) => {
       }
 
       hydrantsStore.addHydrant(newHydrant)
-      uiStore.resetPositionPicking() // ✅ KORRIGIERT: UI Store Methode
+      uiStore.resetPositionPicking()
 
       console.log('✅ Hydrant hinzugefügt:', newHydrant)
       emit('position-picked', { type: 'hydrant', data: newHydrant })
@@ -265,7 +265,7 @@ const handlePositionPick = (lngLat) => {
       }
 
       poiStore.addPOI(newPOI)
-      uiStore.resetPositionPicking() // ✅ KORRIGIERT: UI Store Methode
+      uiStore.resetPositionPicking()
 
       console.log('✅ POI hinzugefügt:', newPOI)
       emit('position-picked', { type: 'poi', data: newPOI })
@@ -279,8 +279,8 @@ const handlePositionPick = (lngLat) => {
         lat: lngLat.lat,
       }
 
-      markersStore.addMarker(newMarker) // ✅ KORRIGIERT: Echte Store Methode
-      uiStore.resetPositionPicking() // ✅ KORRIGIERT: UI Store Methode
+      markersStore.addMarker(newMarker)
+      uiStore.resetPositionPicking()
 
       console.log('✅ Marker hinzugefügt:', newMarker)
       emit('position-picked', { type: 'marker', data: newMarker })
@@ -290,7 +290,7 @@ const handlePositionPick = (lngLat) => {
     map.getCanvas().style.cursor = ''
   } catch (error) {
     console.error('❌ Fehler beim Position Picking:', error)
-    uiStore.resetPositionPicking() // ✅ KORRIGIERT: Cleanup auch bei Fehler
+    uiStore.resetPositionPicking()
   }
 }
 
@@ -517,9 +517,9 @@ const setupHydrantEvents = () => {
   })
 }
 
-// 🏭 POI Layer hinzufügen
+// 🏭 POI Layer hinzufügen - NUR Category Layer verwenden
 const addPOILayer = () => {
-  console.log('🏭 Füge POI Layer hinzu...')
+  console.log('🏭 Füge POI Category Layer hinzu...')
 
   // POI GeoJSON erstellen
   const poiGeoJSON = {
@@ -547,35 +547,9 @@ const addPOILayer = () => {
     data: poiGeoJSON,
   })
 
-  // POI Points Layer (Hauptlayer)
-  map.addLayer({
-    id: 'poi-points',
-    type: 'circle',
-    source: 'pois',
-    paint: {
-      'circle-color': [
-        'match',
-        ['get', 'category'],
-        'gas_station',
-        '#ff6b35',
-        'windmill',
-        '#74c0fc',
-        'power_plant',
-        '#ffd43b',
-        'oil_pump',
-        '#495057',
-        'tanks',
-        '#20c997',
-        '#888888', // default
-      ],
-      'circle-radius': 10,
-      'circle-stroke-width': 2,
-      'circle-stroke-color': '#ffffff',
-    },
-  })
-
-  // ✅ HINZUGEFÜGT: Kategorie-spezifische Layer für Toggles
+  // ✅ NUR kategorie-spezifische Layer erstellen (KEIN Haupt-POI Layer!)
   Object.keys(poiCategories).forEach((category) => {
+    // POI Points für diese Kategorie
     map.addLayer({
       id: `poi-${category}`,
       type: 'circle',
@@ -588,81 +562,72 @@ const addPOILayer = () => {
         'circle-stroke-color': '#ffffff',
       },
     })
+
+    // POI Labels für diese Kategorie
+    map.addLayer({
+      id: `poi-${category}-labels`,
+      type: 'symbol',
+      source: 'pois',
+      filter: ['==', ['get', 'category'], category],
+      layout: {
+        'text-field': poiCategories[category].icon,
+        'text-size': 20,
+        'text-allow-overlap': true,
+        'text-offset': [0, 0],
+      },
+    })
+
+    // POI Namen für diese Kategorie (bei höherem Zoom)
+    map.addLayer({
+      id: `poi-${category}-names`,
+      type: 'symbol',
+      source: 'pois',
+      filter: ['==', ['get', 'category'], category],
+      layout: {
+        'text-field': ['get', 'name'],
+        'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+        'text-size': 12,
+        'text-offset': [0, 2],
+        'text-anchor': 'top',
+      },
+      paint: {
+        'text-color': '#ffffff',
+        'text-halo-color': '#000000',
+        'text-halo-width': 1,
+      },
+      minzoom: 3,
+    })
   })
 
-  // POI Labels
-  map.addLayer({
-    id: 'poi-labels',
-    type: 'symbol',
-    source: 'pois',
-    layout: {
-      'text-field': [
-        'match',
-        ['get', 'category'],
-        'gas_station',
-        '⛽',
-        'windmill',
-        '💨',
-        'power_plant',
-        '⚡',
-        'oil_pump',
-        '🛢️',
-        'tanks',
-        '🛢️',
-        '📍', // default
-      ],
-      'text-size': 20,
-      'text-allow-overlap': true,
-      'text-offset': [0, 0],
-    },
-  })
-
-  // POI Namen (bei höherem Zoom)
-  map.addLayer({
-    id: 'poi-names',
-    type: 'symbol',
-    source: 'pois',
-    layout: {
-      'text-field': ['get', 'name'],
-      'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-      'text-size': 12,
-      'text-offset': [0, 2],
-      'text-anchor': 'top',
-    },
-    paint: {
-      'text-color': '#ffffff',
-      'text-halo-color': '#000000',
-      'text-halo-width': 1,
-    },
-    minzoom: 3,
-  })
-
-  // POI Events Setup
+  // ✅ Click Events für ALLE Category Layer
   setupPOIEvents()
 }
 
-// 🏭 POI Events Setup
+// ✅ KORRIGIERTE POI Events Setup
 const setupPOIEvents = () => {
-  map.on('click', 'poi-points', (e) => {
-    if (uiStore.isPickingPosition) return
+  Object.keys(poiCategories).forEach((category) => {
+    // Click Events für jeden Category Layer
+    map.on('click', `poi-${category}`, (e) => {
+      if (uiStore.isPickingPosition) return
 
-    const feature = e.features[0]
-    const poiId = parseInt(feature.properties.id)
-    poiStore.selectPOI(poiId)
-    showPOIPopup(feature, e.lngLat)
-  })
+      const feature = e.features[0]
+      const poiId = parseInt(feature.properties.id)
+      poiStore.selectPOI(poiId)
+      showPOIPopup(feature, e.lngLat)
+    })
 
-  // POI Hover Effects
-  map.on('mouseenter', 'poi-points', () => {
-    if (!uiStore.isPickingPosition) {
-      map.getCanvas().style.cursor = 'pointer'
-    }
-  })
+    // Hover Effects für jeden Category Layer
+    map.on('mouseenter', `poi-${category}`, () => {
+      if (!uiStore.isPickingPosition) {
+        map.getCanvas().style.cursor = 'pointer'
+      }
+    })
 
-  map.on('mouseleave', 'poi-points', () => {
-    if (!uiStore.isPickingPosition) {
-      map.getCanvas().style.cursor = ''
-    }
+    map.on('mouseleave', `poi-${category}`, () => {
+      if (!uiStore.isPickingPosition) {
+        map.getCanvas().style.cursor = ''
+      }
+    })
   })
 }
 
@@ -782,14 +747,6 @@ const toggleLayer = (layerName, visible) => {
         })
         break
 
-      case 'pois':
-        ;['poi-points', 'poi-labels', 'poi-names'].forEach((id) => {
-          if (map.getLayer(id)) {
-            map.setLayoutProperty(id, 'visibility', visibility)
-          }
-        })
-        break
-
       case 'markers':
         ;['marker-points', 'marker-symbols'].forEach((id) => {
           if (map.getLayer(id)) {
@@ -798,15 +755,17 @@ const toggleLayer = (layerName, visible) => {
         })
         break
 
-      // ✅ HINZUGEFÜGT: POI Category Toggles
+      // ✅ KORRIGIERT: POI Category Toggles - alle Layer einer Kategorie
       case 'gas_station':
       case 'windmill':
       case 'power_plant':
       case 'oil_pump':
       case 'tanks':
-        if (map.getLayer(`poi-${layerName}`)) {
-          map.setLayoutProperty(`poi-${layerName}`, 'visibility', visibility)
-        }
+        ;[`poi-${layerName}`, `poi-${layerName}-labels`, `poi-${layerName}-names`].forEach((id) => {
+          if (map.getLayer(id)) {
+            map.setLayoutProperty(id, 'visibility', visibility)
+          }
+        })
         break
 
       case 'drawings':
@@ -881,7 +840,6 @@ const refreshPOILayer = () => {
   map.getSource('pois').setData(poiGeoJSON)
 }
 
-// ✅ KORRIGIERT: Markers Layer Refresh
 const refreshMarkersLayer = () => {
   if (!map || !map.getSource('markers')) return
 
@@ -975,7 +933,6 @@ watch(
   { deep: true },
 )
 
-// ✅ HINZUGEFÜGT: Markers Watcher
 watch(
   () => markersStore.markers,
   () => {
