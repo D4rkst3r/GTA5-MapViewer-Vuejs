@@ -914,84 +914,128 @@ const refreshPOILayer = () => {
   }
 }
 
-// 📍 Markers Layer mit Icons
+// 📍 Markers Layer mit PNG Icons aus assets
 const addMarkersLayer = () => {
-  console.log('📍 Füge Markers Layer mit Icons hinzu...')
+  console.log('📍 Füge Markers Layer mit PNG Icons hinzu...')
 
   try {
-    map.addSource('markers', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
-    })
+    // 📸 Icons aus assets dynamisch importieren
+    const loadIconsFromAssets = async () => {
+      const iconMap = {}
 
-    // 1. 🎨 Farbiger Kreis-Hintergrund
-    map.addLayer({
-      id: 'markers-layer',
-      type: 'circle',
-      source: 'markers',
-      paint: {
-        'circle-radius': 14, // Etwas kleiner als POIs
-        'circle-color': [
-          'case',
-          ['==', ['get', 'category'], 'route'],
-          '#4287f5',
-          ['==', ['get', 'category'], 'assembly'],
-          '#ff8800',
-          ['==', ['get', 'category'], 'warning'],
-          '#ff4757',
-          ['==', ['get', 'category'], 'star'],
-          '#9d4edd',
-          ['==', ['get', 'category'], 'staging'],
-          '#2ed573',
-          ['==', ['get', 'category'], 'command'],
-          '#ff6b35',
-          '#cccccc',
-        ],
-        'circle-stroke-width': 3,
-        'circle-stroke-color': '#ffffff',
-        'circle-opacity': 0.9,
-      },
-    })
+      try {
+        // Icons dynamisch importieren
+        const routeIcon = await import('@/assets/icons/road.png')
+        const assemblyIcon = await import('@/assets/icons/gathering.png')
+        const warningIcon = await import('@/assets/icons/warning.png')
+        const starIcon = await import('@/assets/icons/star.png')
+        const stagingIcon = await import('@/assets/icons/pharmacy.png')
+        const commandIcon = await import('@/assets/icons/report.png')
+        const markerIcon = await import('@/assets/icons/alert.png')
 
-    // 2. 🎯 Icon Layer darüber
-    map.addLayer({
-      id: 'markers-icons',
-      type: 'symbol',
-      source: 'markers',
-      layout: {
-        'text-field': [
-          'case',
-          ['==', ['get', 'category'], 'route'],
-          '🛣️',
-          ['==', ['get', 'category'], 'assembly'],
-          '👥',
-          ['==', ['get', 'category'], 'warning'],
-          '⚠️',
-          ['==', ['get', 'category'], 'star'],
-          '⭐',
-          ['==', ['get', 'category'], 'staging'],
-          '🚛',
-          ['==', ['get', 'category'], 'command'],
-          '🚩',
-          '📍',
-        ],
-        'text-size': 14,
-        'text-anchor': 'center',
-        'text-allow-overlap': true,
-        'text-ignore-placement': true,
-      },
-      paint: {
-        'text-color': '#ffffff',
-        'text-halo-color': 'rgba(0, 0, 0, 0.8)',
-        'text-halo-width': 1,
-      },
-    })
+        // Icons in die Map laden
+        const iconPromises = [
+          { name: 'route', url: routeIcon.default },
+          { name: 'assembly', url: assemblyIcon.default },
+          { name: 'warning', url: warningIcon.default },
+          { name: 'star', url: starIcon.default },
+          { name: 'staging', url: stagingIcon.default },
+          { name: 'command', url: commandIcon.default },
+          { name: 'default-marker', url: markerIcon.default },
+        ].map((icon) => {
+          return new Promise((resolve) => {
+            map.loadImage(icon.url, (error, image) => {
+              if (error) {
+                console.warn(`⚠️ Icon ${icon.name} konnte nicht geladen werden:`, error)
+              } else {
+                map.addImage(icon.name, image)
+                console.log(`✅ Icon geladen: ${icon.name}`)
+              }
+              resolve()
+            })
+          })
+        })
 
-    refreshMarkersLayer()
-    console.log('✅ Markers Layer mit Icons hinzugefügt')
+        await Promise.all(iconPromises)
+        return true
+      } catch (error) {
+        console.warn('⚠️ Einige Icons konnten nicht importiert werden:', error)
+        return false
+      }
+    }
+
+    // Icons laden und dann Layer erstellen
+    loadIconsFromAssets().then(() => {
+      // Source hinzufügen
+      map.addSource('markers', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+      })
+
+      // 1. 🎨 Farbiger Kreis-Hintergrund (falls Icons transparent sind)
+      map.addLayer({
+        id: 'markers-layer',
+        type: 'circle',
+        source: 'markers',
+        paint: {
+          'circle-radius': 14,
+          'circle-color': [
+            'case',
+            ['==', ['get', 'category'], 'route'],
+            '#4287f5',
+            ['==', ['get', 'category'], 'assembly'],
+            '#ff8800',
+            ['==', ['get', 'category'], 'warning'],
+            '#ff4757',
+            ['==', ['get', 'category'], 'star'],
+            '#9d4edd',
+            ['==', ['get', 'category'], 'staging'],
+            '#2ed573',
+            ['==', ['get', 'category'], 'command'],
+            '#ff6b35',
+            '#cccccc',
+          ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+          'circle-opacity': 0.3, // Transparenter für Icon-Overlay
+        },
+      })
+
+      // 2. 🎯 PNG Icon Layer
+      map.addLayer({
+        id: 'markers-icons',
+        type: 'symbol',
+        source: 'markers',
+        layout: {
+          'icon-image': [
+            'case',
+            ['==', ['get', 'category'], 'route'],
+            'route',
+            ['==', ['get', 'category'], 'assembly'],
+            'assembly',
+            ['==', ['get', 'category'], 'warning'],
+            'warning',
+            ['==', ['get', 'category'], 'star'],
+            'star',
+            ['==', ['get', 'category'], 'staging'],
+            'staging',
+            ['==', ['get', 'category'], 'command'],
+            'command',
+            'default-marker', // Fallback
+          ],
+          'icon-size': 0.6, // Icon-Größe anpassen
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+          'icon-anchor': 'center',
+        },
+      })
+
+      refreshMarkersLayer()
+      console.log('✅ Markers Layer mit PNG Icons aus Assets hinzugefügt')
+    })
   } catch (error) {
     console.error('❌ Markers Layer Fehler:', error)
   }
