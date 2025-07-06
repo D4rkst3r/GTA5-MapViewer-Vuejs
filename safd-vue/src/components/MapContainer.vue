@@ -804,80 +804,120 @@ const refreshHydrantLayer = () => {
   }
 }
 
-// 🏭 POI Layer mit Icons - KORRIGIERT für Kategorie-Filter
+// 🏭 POI Layer mit PNG Icons aus assets - KORRIGIERT für Kategorie-Filter
 const addPOILayer = () => {
-  console.log('🏭 Füge POI Layer mit Icons hinzu...')
+  console.log('🏭 Füge POI Layer mit PNG Icons hinzu...')
 
   try {
-    map.addSource('pois', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [],
-      },
-    })
+    // 📸 POI Icons aus assets dynamisch importieren
+    const loadPOIIconsFromAssets = async () => {
+      try {
+        // POI Icons dynamisch importieren
+        const gasStationIcon = await import('@/assets/icons/gas_station.png')
+        const windmillIcon = await import('@/assets/icons/windmill.png')
+        const powerPlantIcon = await import('@/assets/icons/power_plant.png')
+        const oilPumpIcon = await import('@/assets/icons/oil_pump.png')
+        const tanksIcon = await import('@/assets/icons/tanks.png')
+        const defaultPOIIcon = await import('@/assets/icons/poi.png')
 
-    // 1. 🎨 Farbiger Kreis-Hintergrund
-    map.addLayer({
-      id: 'pois-layer',
-      type: 'circle',
-      source: 'pois',
-      paint: {
-        'circle-radius': 16, // Größer für Icon-Platz
-        'circle-color': [
-          'case',
-          ['==', ['get', 'category'], 'gas_station'],
-          '#ff6b35',
-          ['==', ['get', 'category'], 'windmill'],
-          '#74c0fc',
-          ['==', ['get', 'category'], 'power_plant'],
-          '#ffd43b',
-          ['==', ['get', 'category'], 'oil_pump'],
-          '#495057',
-          ['==', ['get', 'category'], 'tanks'],
-          '#20c997',
-          '#ff4444', // KORRIGIERT: Fallback für leere Kategorien (rot statt grau)
-        ],
-        'circle-stroke-width': 3,
-        'circle-stroke-color': '#ffffff',
-        'circle-opacity': 0.9,
-      },
-    })
+        // Icons in die Map laden
+        const iconPromises = [
+          { name: 'gas_station', url: gasStationIcon.default },
+          { name: 'windmill', url: windmillIcon.default },
+          { name: 'power_plant', url: powerPlantIcon.default },
+          { name: 'oil_pump', url: oilPumpIcon.default },
+          { name: 'tanks', url: tanksIcon.default },
+          { name: 'default-poi', url: defaultPOIIcon.default },
+        ].map((icon) => {
+          return new Promise((resolve) => {
+            map.loadImage(icon.url, (error, image) => {
+              if (error) {
+                console.warn(`⚠️ POI Icon ${icon.name} konnte nicht geladen werden:`, error)
+              } else {
+                map.addImage(icon.name, image)
+                console.log(`✅ POI Icon geladen: ${icon.name}`)
+              }
+              resolve()
+            })
+          })
+        })
 
-    // 2. 🎯 Icon Layer darüber
-    map.addLayer({
-      id: 'pois-icons',
-      type: 'symbol',
-      source: 'pois',
-      layout: {
-        'text-field': [
-          'case',
-          ['==', ['get', 'category'], 'gas_station'],
-          '⛽',
-          ['==', ['get', 'category'], 'windmill'],
-          '💨',
-          ['==', ['get', 'category'], 'power_plant'],
-          '⚡',
-          ['==', ['get', 'category'], 'oil_pump'],
-          '🛢️',
-          ['==', ['get', 'category'], 'tanks'],
-          '🗂️',
-          '🏭', // Fallback Icon
-        ],
-        'text-size': 16,
-        'text-anchor': 'center',
-        'text-allow-overlap': true,
-        'text-ignore-placement': true,
-      },
-      paint: {
-        'text-color': '#ffffff',
-        'text-halo-color': 'rgba(0, 0, 0, 0.5)',
-        'text-halo-width': 1,
-      },
-    })
+        await Promise.all(iconPromises)
+        return true
+      } catch (error) {
+        console.warn('⚠️ Einige POI Icons konnten nicht importiert werden:', error)
+        return false
+      }
+    }
 
-    refreshPOILayer()
-    console.log('✅ POI Layer mit Icons hinzugefügt')
+    // POI Icons laden und dann Layer erstellen
+    loadPOIIconsFromAssets().then(() => {
+      // Source hinzufügen
+      map.addSource('pois', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+      })
+
+      // 1. 🎨 Farbiger Kreis-Hintergrund
+      map.addLayer({
+        id: 'pois-layer',
+        type: 'circle',
+        source: 'pois',
+        paint: {
+          'circle-radius': 16, // Größer für Icon-Platz
+          'circle-color': [
+            'case',
+            ['==', ['get', 'category'], 'gas_station'],
+            '#ff6b35',
+            ['==', ['get', 'category'], 'windmill'],
+            '#74c0fc',
+            ['==', ['get', 'category'], 'power_plant'],
+            '#ffd43b',
+            ['==', ['get', 'category'], 'oil_pump'],
+            '#495057',
+            ['==', ['get', 'category'], 'tanks'],
+            '#20c997',
+            '#ff4444', // KORRIGIERT: Fallback für leere Kategorien (rot statt grau)
+          ],
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#ffffff',
+          'circle-opacity': 0.3, // Transparenter für Icon-Overlay
+        },
+      })
+
+      // 2. 🎯 PNG Icon Layer darüber
+      map.addLayer({
+        id: 'pois-icons',
+        type: 'symbol',
+        source: 'pois',
+        layout: {
+          'icon-image': [
+            'case',
+            ['==', ['get', 'category'], 'gas_station'],
+            'gas_station',
+            ['==', ['get', 'category'], 'windmill'],
+            'windmill',
+            ['==', ['get', 'category'], 'power_plant'],
+            'power_plant',
+            ['==', ['get', 'category'], 'oil_pump'],
+            'oil_pump',
+            ['==', ['get', 'category'], 'tanks'],
+            'tanks',
+            'default-poi', // Fallback Icon
+          ],
+          'icon-size': 0.7, // POI Icons etwas größer als Marker
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+          'icon-anchor': 'center',
+        },
+      })
+
+      refreshPOILayer()
+      console.log('✅ POI Layer mit PNG Icons aus Assets hinzugefügt')
+    })
   } catch (error) {
     console.error('❌ POI Layer Fehler:', error)
   }
@@ -925,13 +965,13 @@ const addMarkersLayer = () => {
 
       try {
         // Icons dynamisch importieren
-        const routeIcon = await import('@/assets/icons/road.png')
-        const assemblyIcon = await import('@/assets/icons/gathering.png')
+        const routeIcon = await import('@/assets/icons/route.png')
+        const assemblyIcon = await import('@/assets/icons/assembly.png')
         const warningIcon = await import('@/assets/icons/warning.png')
         const starIcon = await import('@/assets/icons/star.png')
-        const stagingIcon = await import('@/assets/icons/pharmacy.png')
-        const commandIcon = await import('@/assets/icons/report.png')
-        const markerIcon = await import('@/assets/icons/alert.png')
+        const stagingIcon = await import('@/assets/icons/staging.png')
+        const commandIcon = await import('@/assets/icons/command.png')
+        const markerIcon = await import('@/assets/icons/marker.png')
 
         // Icons in die Map laden
         const iconPromises = [
