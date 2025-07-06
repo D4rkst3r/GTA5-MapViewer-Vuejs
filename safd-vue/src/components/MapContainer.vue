@@ -639,12 +639,14 @@ const setupMapEvents = () => {
     const poi = e.features[0].properties
     console.log('🏭 POI geklickt:', poi)
     showPOIPopup(e.features[0], e.lngLat)
+    poiStore.selectPOI(poi.id) // ✅ DIESE ZEILE HINZUFÜGEN
   })
 
   map.on('click', 'markers-layer', (e) => {
     const marker = e.features[0].properties
     console.log('📍 Marker geklickt:', marker)
     showMarkerPopup(e.features[0], e.lngLat)
+    markersStore.selectMarker(marker.id) // ✅ DIESE ZEILE HINZUFÜGEN
   })
 
   // Cursor change events
