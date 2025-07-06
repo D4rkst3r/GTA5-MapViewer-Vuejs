@@ -633,6 +633,7 @@ const setupMapEvents = () => {
     console.log('🚒 Hydrant geklickt:', hydrant)
     showHydrantPopup(e.features[0], e.lngLat)
     hydrantsStore.selectHydrant(hydrant.id)
+    e.stopPropagation()
   })
 
   // 🏭 POI Click Events (beide Layer abfangen)
@@ -641,6 +642,7 @@ const setupMapEvents = () => {
     console.log('🏭 POI geklickt:', poi)
     showPOIPopup(e.features[0], e.lngLat)
     poiStore.selectPOI(poi.id)
+    e.stopPropagation()
   }
 
   map.on('click', 'pois-layer', handlePOIClick)
@@ -652,6 +654,7 @@ const setupMapEvents = () => {
     console.log('📍 Marker geklickt:', marker)
     showMarkerPopup(e.features[0], e.lngLat)
     markersStore.selectMarker(marker.id)
+    e.stopPropagation()
   }
 
   map.on('click', 'markers-layer', handleMarkerClick)
@@ -675,7 +678,7 @@ const setupMapEvents = () => {
   setupCursorEvents('markers-icons')
 }
 
-// 🎯 Handle Position Picking
+// 🎯 Handle Position Picking - KORRIGIERT für vollständige POI-Daten
 const handlePositionPick = (lngLat) => {
   console.log('🎯 Position gepickt:', lngLat)
 
@@ -691,6 +694,21 @@ const handlePositionPick = (lngLat) => {
     }
 
     if (uiStore.isAddingPOI) {
+      console.log('🏭 POI Daten beim Position Picking:', uiStore.pendingPOIData)
+
+      // KORRIGIERT: Validierung für POI-Daten
+      if (!uiStore.pendingPOIData.name || !uiStore.pendingPOIData.category) {
+        console.error('❌ POI Daten unvollständig:', uiStore.pendingPOIData)
+        if (window.showToast) {
+          window.showToast(
+            'POI Daten sind unvollständig - bitte Name und Kategorie eingeben',
+            'error',
+          )
+        }
+        uiStore.resetPositionPicking()
+        return
+      }
+
       const newPOI = poiStore.addPOI({
         ...uiStore.pendingPOIData,
         lng: lngLat.lng,
@@ -789,7 +807,7 @@ const refreshHydrantLayer = () => {
   }
 }
 
-// 🏭 POI Layer mit Icons
+// 🏭 POI Layer mit Icons - KORRIGIERT für Kategorie-Filter
 const addPOILayer = () => {
   console.log('🏭 Füge POI Layer mit Icons hinzu...')
 
@@ -821,7 +839,7 @@ const addPOILayer = () => {
           '#495057',
           ['==', ['get', 'category'], 'tanks'],
           '#20c997',
-          '#cccccc',
+          '#ff4444', // KORRIGIERT: Fallback für leere Kategorien (rot statt grau)
         ],
         'circle-stroke-width': 3,
         'circle-stroke-color': '#ffffff',
@@ -847,7 +865,7 @@ const addPOILayer = () => {
           '🛢️',
           ['==', ['get', 'category'], 'tanks'],
           '🗂️',
-          '🏭',
+          '🏭', // Fallback Icon
         ],
         'text-size': 16,
         'text-anchor': 'center',
@@ -870,7 +888,20 @@ const addPOILayer = () => {
 
 const refreshPOILayer = () => {
   if (map.getSource('pois')) {
-    const features = poiStore.pois.map((poi) => ({
+    // KORRIGIERT: Filter POIs basierend auf Kategorie-Sichtbarkeit
+    const visiblePOIs = poiStore.pois.filter((poi) => {
+      // Wenn keine Kategorie gesetzt ist, trotzdem anzeigen (mit Fallback-Icon)
+      if (!poi.category) {
+        console.warn('⚠️ POI ohne Kategorie gefunden:', poi)
+        return true
+      }
+      // Prüfe ob Kategorie sichtbar ist
+      return mapStore.layers[poi.category] !== false
+    })
+
+    console.log(`🏭 POI Refresh: ${visiblePOIs.length}/${poiStore.pois.length} POIs sichtbar`)
+
+    const features = visiblePOIs.map((poi) => ({
       type: 'Feature',
       geometry: {
         type: 'Point',
@@ -1018,10 +1049,10 @@ const showPOIPopup = (feature, lngLat) => {
 
   const popupContent = `
     <div style="color: #ffffff; font-weight: bold; margin-bottom: 8px;">
-      🏭 ${props.name}
+      🏭 ${props.name || 'Unbenannter POI'}
     </div>
     <div style="font-size: 12px; line-height: 1.4;">
-      <strong>Kategorie:</strong> ${poiCategories[props.category]?.name || props.category}<br>
+      <strong>Kategorie:</strong> ${poiCategories[props.category]?.name || props.category || 'Unbekannt'}<br>
       <strong>Beschreibung:</strong> ${props.description || 'Keine Beschreibung'}
     </div>
   `
@@ -1034,10 +1065,10 @@ const showMarkerPopup = (feature, lngLat) => {
 
   const popupContent = `
     <div style="color: #ffffff; font-weight: bold; margin-bottom: 8px;">
-      📍 ${props.name}
+      📍 ${props.name || 'Unbenannter Marker'}
     </div>
     <div style="font-size: 12px; line-height: 1.4;">
-      <strong>Kategorie:</strong> ${markerCategories[props.category]?.name || props.category}<br>
+      <strong>Kategorie:</strong> ${markerCategories[props.category]?.name || props.category || 'Unbekannt'}<br>
       <strong>Beschreibung:</strong> ${props.description || 'Keine Beschreibung'}
     </div>
   `
@@ -1045,7 +1076,7 @@ const showMarkerPopup = (feature, lngLat) => {
   new maplibregl.Popup().setLngLat(lngLat).setHTML(popupContent).addTo(map)
 }
 
-// 🎛️ Layer Toggle Management
+// 🎛️ Layer Toggle Management - KORRIGIERT für POI-Kategorien
 const toggleLayer = (layerName, visible) => {
   if (map && map.getLayer(layerName)) {
     const visibility = visible ? 'visible' : 'none'
@@ -1084,18 +1115,59 @@ watch(
   { deep: true },
 )
 
+// KORRIGIERT: Layer Visibility Watch für POI-Kategorien
 watch(
   () => mapStore.layers,
   (newLayers) => {
+    console.log('🎛️ Layer Toggle erkannt:', newLayers)
+
     Object.keys(newLayers).forEach((layerName) => {
-      const mapLayerName =
-        layerName === 'hydrants'
-          ? 'hydrants-layer'
-          : layerName === 'pois'
-            ? 'pois-layer'
-            : layerName === 'markers'
-              ? 'markers-layer'
-              : layerName
+      // Standard Layer Mappings
+      const layerMappings = {
+        hydrants: 'hydrants-layer',
+        pois: 'pois-layer',
+        markers: 'markers-layer',
+        districts: 'districts-layer',
+        routes: 'routes-layer',
+        exclusions: 'exclusions-layer',
+      }
+
+      // POI Kategorie Layer (spezielle Behandlung)
+      if (['gas_station', 'windmill', 'power_plant', 'oil_pump', 'tanks'].includes(layerName)) {
+        // Für POI-Kategorien: refresh POI Layer um Filter anzuwenden
+        refreshPOILayer()
+        return
+      }
+
+      // Drawing Layer (spezielle Behandlung)
+      if (layerName === 'drawings') {
+        if (draw) {
+          const visibility = newLayers[layerName] ? 'visible' : 'none'
+          const drawLayers = [
+            'gl-draw-polygon-fill-inactive',
+            'gl-draw-polygon-fill-active',
+            'gl-draw-polygon-stroke-inactive',
+            'gl-draw-polygon-stroke-active',
+            'gl-draw-line-inactive',
+            'gl-draw-line-active',
+            'gl-draw-point-inactive',
+            'gl-draw-point-active',
+            'gl-draw-polygon-and-line-vertex-inactive',
+          ]
+
+          drawLayers.forEach((drawLayer) => {
+            if (map.getLayer(drawLayer)) {
+              map.setLayoutProperty(drawLayer, 'visibility', visibility)
+            }
+          })
+
+          console.log(`🎨 Drawing Layer: ${visibility}`)
+        }
+        return
+      }
+
+      // Standard Layer Toggle
+      const mapLayerName = layerMappings[layerName] || layerName
       toggleLayer(mapLayerName, newLayers[layerName])
     })
   },
