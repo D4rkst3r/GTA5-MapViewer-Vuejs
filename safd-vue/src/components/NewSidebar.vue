@@ -1,4 +1,4 @@
-<!-- src/components/Sidebar.vue (KORRIGIERT) -->
+<!-- src/components/Sidebar.vue - MIT BEARBEITUNGSFUNKTION -->
 <template>
   <div class="sidebar" :class="{ open: isOpen }">
     <!-- Header -->
@@ -57,19 +57,70 @@
       <SidebarSection title="Hydranten verwalten" icon="fas fa-fire-hydrant" :expanded="true">
         <div class="stats-overview">
           <div class="stat-item">
-            <span class="stat-value">{{ hydrantsStore.hydrantCount }}</span>
+            <span class="stat-value">{{ hydrantsStore.hydrants.length }}</span>
             <span class="stat-label">Gesamt</span>
           </div>
           <div class="stat-item">
-            <span class="stat-value">{{ hydrantsStore.maintenanceOverdue.length }}</span>
+            <span class="stat-value">{{ hydrantStats.maintenance }}</span>
             <span class="stat-label">Wartung fällig</span>
           </div>
         </div>
 
+        <!-- ✅ NEUER HYDRANT BUTTON -->
         <button v-if="userStore.isAdmin" @click="startAddingHydrant()" class="modern-button">
           <i class="fas fa-plus"></i>
           Neuen Hydranten hinzufügen
         </button>
+
+        <!-- ✅ HYDRANTENLISTE MIT BEARBEITUNG -->
+        <div class="hydrant-list-section">
+          <div class="section-header">
+            <h4>Hydranten Liste</h4>
+            <button @click="toggleHydrantList" class="toggle-btn">
+              <i :class="showHydrantList ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+            </button>
+          </div>
+
+          <div v-if="showHydrantList" class="hydrant-list">
+            <div
+              v-for="hydrant in filteredHydrants"
+              :key="hydrant.id"
+              class="hydrant-item"
+              :class="{ 'maintenance-due': hydrant.maintenanceDue }"
+            >
+              <div class="hydrant-info">
+                <div class="hydrant-title">
+                  <i
+                    class="fas fa-fire-hydrant"
+                    :style="{ color: getStatusColor(hydrant.status) }"
+                  ></i>
+                  Hydrant #{{ hydrant.id }}
+                </div>
+                <div class="hydrant-details">
+                  {{ hydrant.area }} • {{ hydrant.type }} • {{ hydrant.status }}
+                </div>
+              </div>
+              <div class="hydrant-actions">
+                <!-- ✅ BEARBEITEN BUTTON - Verwendet openHydrantForm -->
+                <button
+                  @click="openHydrantForm(hydrant)"
+                  class="action-btn edit-btn"
+                  title="Bearbeiten"
+                >
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button
+                  v-if="userStore.isAdmin"
+                  @click="deleteHydrant(hydrant.id)"
+                  class="action-btn delete-btn"
+                  title="Löschen"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <button @click="showMaintenanceModal" class="modern-button button-secondary">
           <i class="fas fa-wrench"></i>
@@ -193,7 +244,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useMapStore } from '@/stores/map'
 import { useHydrantsStore } from '@/stores/hydrants'
 import { useUserStore } from '@/stores/user'
-import { useUIStore } from '@/stores/ui' // ✅ UI Store für Position Picking
+import { useUIStore } from '@/stores/ui'
 import { usePOIStore } from '@/stores/pois'
 
 // Components
@@ -215,7 +266,7 @@ const mapStore = useMapStore()
 const hydrantsStore = useHydrantsStore()
 const userStore = useUserStore()
 const poiStore = usePOIStore()
-const uiStore = useUIStore() // ✅ UI Store für State Management
+const uiStore = useUIStore()
 
 // 🎭 Modal State (lokal verwaltet)
 const modalData = ref({
@@ -227,11 +278,42 @@ const showPOIForm = ref(false)
 
 // 📊 Reactive Data
 const drawingMode = ref('simple_select')
+const showHydrantList = ref(false) // ✅ NEU: Toggle für Hydrantenliste
 
-// 🧮 Computed
+// 🧮 Computed Properties
 const districts = computed(() => {
   const allDistricts = hydrantsStore.hydrants.map((h) => h.area).filter(Boolean)
   return [...new Set(allDistricts)].sort()
+})
+
+// ✅ NEU: Gefilterte Hydranten
+const filteredHydrants = computed(() => {
+  let hydrants = hydrantsStore.hydrants
+
+  // Filter nach Bezirk
+  if (hydrantsStore.filters.district) {
+    hydrants = hydrants.filter((h) => h.area === hydrantsStore.filters.district)
+  }
+
+  // Filter nach Suche
+  if (hydrantsStore.filters.search) {
+    const search = hydrantsStore.filters.search.toLowerCase()
+    hydrants = hydrants.filter(
+      (h) =>
+        h.id.toString().includes(search) ||
+        h.area?.toLowerCase().includes(search) ||
+        h.status?.toLowerCase().includes(search),
+    )
+  }
+
+  return hydrants.slice(0, 10) // Maximal 10 anzeigen
+})
+
+// ✅ NEU: Hydrant Stats
+const hydrantStats = computed(() => {
+  return {
+    maintenance: hydrantsStore.hydrants.filter((h) => h.maintenanceDue).length,
+  }
 })
 
 // 🎮 Methods
@@ -241,7 +323,6 @@ const onMapStyleChange = () => {
 
 const changeDrawingMode = () => {
   console.log(`🎨 Drawing Mode: ${drawingMode.value}`)
-  // TODO: Emit an MapContainer um Drawing Mode zu ändern
 }
 
 const clearAllDrawings = async () => {
@@ -270,17 +351,19 @@ const exportDrawings = () => {
 
 const showMaintenanceModal = () => {
   showToast('Wartungsübersicht öffnet sich...', 'info')
-  // TODO: Implement maintenance modal
 }
 
-// ✅ KORRIGIERTE MODAL HANDLERS - Position Picking Integration
+// ✅ NEUE HYDRANTEN-FUNKTIONEN
+const toggleHydrantList = () => {
+  showHydrantList.value = !showHydrantList.value
+}
+
 const startAddingHydrant = () => {
   if (!userStore.isAdmin) {
     showToast('Nur Admins können Hydranten hinzufügen', 'error')
     return
   }
 
-  // Bereite Hydrant-Daten vor
   uiStore.pendingHydrantData = {
     area: '',
     type: 'unterflur',
@@ -289,11 +372,39 @@ const startAddingHydrant = () => {
     nextService: '',
   }
 
-  // Aktiviere Position Picking
   uiStore.isAddingHydrant = true
-
   showToast('Klicke auf die Karte, um einen neuen Hydranten zu platzieren', 'info')
-  console.log('🚒 Hydrant Position Picking aktiviert')
+}
+
+// ✅ BEARBEITUNGSFUNKTION - Verwendet openHydrantForm
+const openHydrantForm = (hydrant = null) => {
+  modalData.value.hydrant = hydrant
+  showHydrantForm.value = true
+  console.log('📝 Hydrant-Form geöffnet:', hydrant ? `#${hydrant.id}` : 'Neu')
+}
+
+// ✅ NEU: Hydrant löschen
+const deleteHydrant = async (hydrantId) => {
+  const confirmed = await showConfirm(`Hydrant #${hydrantId} wirklich löschen?`, 'Hydrant löschen')
+
+  if (confirmed) {
+    hydrantsStore.deleteHydrant(hydrantId)
+    showToast(`Hydrant #${hydrantId} gelöscht`, 'success')
+  }
+}
+
+// ✅ NEU: Status-Farben
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'ok':
+      return '#2ed573'
+    case 'wartung':
+      return '#ffa502'
+    case 'defekt':
+      return '#ff4757'
+    default:
+      return '#cccccc'
+  }
 }
 
 const startAddingPOI = () => {
@@ -301,15 +412,7 @@ const startAddingPOI = () => {
     showToast('Nur Admins können POIs hinzufügen', 'error')
     return
   }
-
-  // Öffne POI Form für Konfiguration
   openPOIForm()
-}
-
-// 📝 Form Handlers
-const openHydrantForm = (hydrant = null) => {
-  modalData.value.hydrant = hydrant
-  showHydrantForm.value = true
 }
 
 const openPOIForm = (poi = null) => {
@@ -321,12 +424,10 @@ const onHydrantSaved = (hydrantData) => {
   console.log('🚒 Hydrant gespeichert:', hydrantData)
 
   if (hydrantData.isNew) {
-    // Für neue Hydranten: Position Picking aktivieren
     uiStore.pendingHydrantData = hydrantData
     uiStore.isAddingHydrant = true
     showToast('Klicke auf die Karte, um den Hydranten zu platzieren', 'info')
   } else {
-    // Für Updates: Direkt in Store speichern
     hydrantsStore.updateHydrant(hydrantData)
     showToast('Hydrant aktualisiert', 'success')
   }
@@ -334,15 +435,12 @@ const onHydrantSaved = (hydrantData) => {
   showHydrantForm.value = false
 }
 
-// POI-Handler korrigieren:
 const onPOISaved = (poiData) => {
   console.log('🏭 POI gespeichert:', poiData)
 
   if (poiData.isEditing) {
-    // Update existing POI
     poiStore.updatePOI(poiData.id, poiData)
   } else {
-    // Bereite POI für Position Picking vor
     uiStore.pendingPOIData = poiData
     uiStore.isAddingPOI = true
     showToast('Klicke auf die Karte, um den POI zu platzieren', 'info')
@@ -360,14 +458,11 @@ const showConfirm = async (message, title = 'Bestätigung') => {
 }
 
 const showToast = (message, type = 'info', duration = 3000) => {
-  // Toast Funktion - TODO: Implement proper toast system
   console.log(`🍞 Toast [${type}]: ${message}`)
 
-  // Temporärer Fallback
   if (window.showToast) {
     window.showToast(message, type, duration)
   } else {
-    // Einfacher Alert als Fallback
     if (type === 'error') {
       alert(`❌ ${message}`)
     } else if (type === 'success') {
@@ -584,5 +679,121 @@ onMounted(() => {
 
 .poi-toggles {
   margin-bottom: 16px;
+}
+
+/* ===== ✅ NEUE HYDRANTENLISTE STYLES ===== */
+.hydrant-list-section {
+  margin: 16px 0;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section-header h4 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hydrant-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.hydrant-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s ease;
+}
+
+.hydrant-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.hydrant-item.maintenance-due {
+  border-left: 3px solid var(--warning);
+  background: rgba(255, 165, 2, 0.05);
+}
+
+.hydrant-info {
+  flex: 1;
+}
+
+.hydrant-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hydrant-details {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.hydrant-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.action-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.edit-btn:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.delete-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(255, 71, 87, 0.1);
 }
 </style>
