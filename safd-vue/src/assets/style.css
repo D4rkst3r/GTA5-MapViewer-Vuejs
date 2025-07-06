@@ -1,1350 +1,652 @@
+/* =================================
+   🎨 SAFD COMMAND CENTER STYLES
+   ================================= */
 
+/* CSS Reset & Base */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
+/* CSS Variables */
 :root {
-    --primary-color: #ff4444;
-    --primary-dark: #cc3333;
-    --secondary-color: #ffffff;
-    --background-dark: #1a1a1a;
-    --background-darker: #0f0f0f;
-    --surface: rgba(26, 26, 26, 0.95);
-    --surface-hover: rgba(40, 40, 40, 0.95);
-    --text-primary: #ffffff;
-    --text-secondary: #cccccc;
-    --border-color: #333333;
-    --accent-blue: #4287f5;
-    --accent-orange: #ff8800;
-    --accent-purple: #9d4edd;
-    --danger: #ff4757;
-    --success: #2ed573;
-    --warning: #ffa502;
+  --primary-color: #ff4444;
+  --primary-dark: #cc3333;
+  --secondary-color: #ffffff;
+  --background-dark: #1a1a1a;
+  --background-darker: #0f0f0f;
+  --surface: rgba(26, 26, 26, 0.95);
+  --surface-hover: rgba(40, 40, 40, 0.95);
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --border-color: #333333;
+  --accent-blue: #4287f5;
+  --accent-orange: #ff8800;
+  --accent-purple: #9d4edd;
+  --danger: #ff4757;
+  --success: #2ed573;
+  --warning: #ffa502;
 }
 
+/* Global Styles */
 body {
-    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--background-darker);
-    color: var(--text-primary);
-    overflow: hidden;
-    line-height: 1.6;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--background-darker);
+  color: var(--text-primary);
+  overflow: hidden;
+  line-height: 1.6;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
 }
 
 #map {
-    width: 100vw;
-    height: 100vh;
+  width: 100vw;
+  height: 100vh;
 }
 
+/* =================================
+ 🏢 SIDEBAR STYLES
+ ================================= */
 
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -400px;
+  width: 380px;
+  height: 100vh;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-color);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  overflow-y: auto;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar.open {
+  left: 0;
+}
 
 .sidebar-header {
-    padding: 20px;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-    color: white;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .sidebar-title {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 5px;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 5px;
 }
 
 .sidebar-subtitle {
-    font-size: 14px;
-    opacity: 0.9;
+  font-size: 14px;
+  opacity: 0.9;
 }
 
+.sidebar-content {
+  overflow-y: auto;
+  max-height: calc(100vh - 140px);
+}
+
+/* Sidebar Sections */
+.section {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section:last-of-type {
+  border-bottom: none;
+}
+
+.section-header {
+  background: transparent;
+  padding: 16px 20px;
+  border-bottom: none;
+  transition: background 0.2s ease-out;
+}
+
+.section-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.section-toggle {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.section.expanded .section-toggle {
+  transform: rotate(180deg);
+}
+
+/* =================================
+ 🎛️ FORM CONTROLS
+ ================================= */
+
+.control-group {
+  margin-bottom: 22px;
+}
+
+.control-label {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
 
 .modern-select,
 .modern-input,
 .modern-button {
-    width: 100%;
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-size: 14px;
-    transition: all 0.2s ease;
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
 .modern-select:focus,
 .modern-input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.1);
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.1);
+  background: rgba(255, 255, 255, 0.12);
 }
 
+.modern-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* Textarea specific */
+.modern-input[type="textarea"],
+textarea.modern-input {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Date Input specific */
+.modern-input[type="date"] {
+  color-scheme: dark;
+}
+
+/* =================================
+ 🔘 BUTTONS
+ ================================= */
+
 .modern-button {
-    cursor: pointer;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s ease;
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-    margin-bottom: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  margin-bottom: 8px;
 }
 
 .modern-button:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
 }
 
 .button-secondary {
-    background: var(--accent-blue);
-    border-color: var(--accent-blue);
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
 }
 
 .button-secondary:hover {
-    background: #3167c7;
-    box-shadow: 0 4px 12px rgba(66, 135, 245, 0.3);
+  background: #3167c7;
+  box-shadow: 0 4px 12px rgba(66, 135, 245, 0.3);
 }
 
 .button-success {
-    background: var(--success);
-    border-color: var(--success);
+  background: var(--success);
+  border-color: var(--success);
 }
 
 .button-warning {
-    background: var(--warning);
-    border-color: var(--warning);
+  background: var(--warning);
+  border-color: var(--warning);
 }
 
-.button-danger {
-    background: var(--danger);
-    border-color: var(--danger);
+/* Button Grid Layout */
+#drawing-tools-content,
+#einsatzplanung-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
-.button-small {
-    padding: 8px 12px;
-    font-size: 12px;
-}
-.form-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
+#drawing-tools-content .modern-button,
+#einsatzplanung-content .modern-button {
+  margin-bottom: 0;
+  font-size: 13px;
 }
 
-/* Toggle Switch */
-.toggle-switch {
-    display: flex;
-    align-items: center;
-    margin: 12px 0;
+/* =================================
+ 🔍 SEARCH FUNCTIONALITY
+ ================================= */
+
+.search-wrapper {
+  position: relative;
 }
 
-.toggle-input {
-    width: 48px;
-    height: 24px;
-    background: var(--border-color);
-    border-radius: 12px;
-    position: relative;
-    margin-right: 12px;
-    cursor: pointer;
-    transition: background 0.2s ease;
+#hydrantSearchInput {
+  padding-right: 40px;
 }
 
-.toggle-input::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 20px;
-    height: 20px;
-    background: white;
-    border-radius: 50%;
-    transition: transform 0.2s ease;
+.search-clear {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 100%;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-.toggle-input.checked {
-    background: var(--primary-color);
+#hydrantSearchInput:not(:placeholder-shown) + .search-clear {
+  opacity: 0.7;
 }
 
-.toggle-input.checked::after {
-    transform: translateX(24px);
+#hydrantSearchInput:not(:placeholder-shown) + .search-clear:hover {
+  opacity: 1;
+  color: var(--primary-color);
 }
 
-/* Top Controls */
-.top-controls {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 1001;
-    display: flex;
-    gap: 12px;
+/* =================================
+ 📍 MARKER SELECTION GRID
+ ================================= */
+
+.marker-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 15px 0;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 5px;
 }
 
-.control-button {
-    width: 48px;
-    height: 48px;
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    color: var(--text-primary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(20px);
+.marker-option {
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 8px;
+  transition: all 0.2s ease;
+  text-align: center;
 }
 
-.control-button:hover {
-    background: var(--surface-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+.marker-option i {
+  font-size: 20px;
+  margin-bottom: 4px;
 }
 
-.control-button.active {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
+.marker-option img {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+  filter: brightness(0) invert(1);
 }
 
-/* Info Panels */
-.info-panel {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 320px;
-    max-height: calc(100vh - 40px);
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    backdrop-filter: blur(20px);
-    overflow: hidden;
-    transform: translateX(400px);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1002;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+.marker-option span {
+  font-size: 10px;
+  font-weight: 500;
+  margin-top: 4px;
+  line-height: 1.2;
 }
 
-.info-panel.active {
-    transform: translateX(0);
+.marker-option:hover {
+  border-color: var(--primary-color);
+  background: rgba(255, 68, 68, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.2);
 }
 
-.info-header {
-    padding: 20px;
-    background: linear-gradient(135deg, var(--accent-blue), #3167c7);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+.marker-option.selected {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(255, 68, 68, 0.4);
+  z-index: 1;
 }
 
-.info-content {
-    padding: 20px;
-    overflow-y: auto;
-    max-height: calc(100vh - 140px);
+/* Scrollbar for Grid */
+.marker-selection-grid::-webkit-scrollbar {
+  width: 6px;
 }
 
-.close-button {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 20px;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: background 0.2s ease;
+.marker-selection-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
 }
 
-.close-button:hover {
-    background: rgba(255, 255, 255, 0.2);
+.marker-selection-grid::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 3px;
 }
 
-/* Status Cards */
+.marker-selection-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+/* =================================
+ 📊 STATUS CARDS
+ ================================= */
+
 .status-grid {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px;
-    z-index: 1000;
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  z-index: 999;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .status-card {
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
-    backdrop-filter: blur(20px);
-    text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  backdrop-filter: blur(20px);
+  text-align: center;
 }
 
 .status-value {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--secondary-color);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--secondary-color);
 }
 
 .status-label {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
 }
 
-/* Legend */
+/* =================================
+ 🎛️ TOP CONTROLS
+ ================================= */
+
+.top-controls {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 999;
+  display: flex;
+  gap: 12px;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =================================
+ 📝 LEGEND
+ ================================= */
+
 .legend {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
-    backdrop-filter: blur(20px);
-    z-index: 1000;
-    min-width: 200px;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  backdrop-filter: blur(20px);
+  z-index: 999;
+  min-width: 200px;
 }
 
 .legend-title {
-    font-weight: 600;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .legend-item {
-    display: flex;
-    align-items: center;
-    margin: 8px 0;
-    gap: 10px;
-    font-size: 13px;
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+  gap: 10px;
+  font-size: 13px;
 }
 
 .legend-icon {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-
-/* Modal */
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(5px);
-    z-index: 2000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal.active {
-    display: flex;
-}
-
-.modal-content {
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 30px;
-    max-width: 500px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-.modal-header {
-    margin-bottom: 20px;
-}
-
-.modal-title {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-/* Tooltips */
-.tooltip {
-    position: relative;
-}
-
-.tooltip::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--background-dark);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    z-index: 1000;
-}
-
-.tooltip:hover::after {
-    opacity: 1;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .sidebar {
-        width: 100vw;
-        left: -100vw;
-    }
-
-    .info-panel {
-        width: calc(100vw - 40px);
-        right: 20px;
-    }
-
-    .status-grid {
-        grid-template-columns: repeat(2, 1fr);
-        left: 10px;
-        right: 10px;
-    }
-}
-
-/* Animations */
-@keyframes slideInLeft {
-    from {
-        transform: translateX(-100%);
-    }
-
-    to {
-        transform: translateX(0);
-    }
-}
-
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-    }
-
-    to {
-        transform: translateX(0);
-    }
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.animate-in {
-    animation: fadeInUp 0.3s ease-out;
-}
-
-/* Loading */
-.loading {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 3000;
-    color: var(--primary-color);
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid var(--border-color);
-    border-top: 3px solid var(--primary-color);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Customize MapLibre controls */
-.maplibregl-ctrl-group {
-    background: var(--surface) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
-    backdrop-filter: blur(20px) !important;
-}
-
-.maplibregl-ctrl button {
-    background: transparent !important;
-    color: var(--text-primary) !important;
-    border: none !important;
-    width: 40px !important;
-    height: 40px !important;
-}
-
-.maplibregl-ctrl button:hover {
-    background: var(--surface-hover) !important;
-}
-
-.maplibregl-popup-content {
-    background: var(--surface) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
-    backdrop-filter: blur(20px) !important;
-}
-
-.maplibregl-popup-close-button {
-    color: var(--text-primary) !important;
-    font-size: 18px !important;
-}
-
-/* Special marker types */
-.custom-marker {
-    background: var(--surface);
-    border: 2px solid var(--border-color);
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(10px);
-}
-
-.custom-marker:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-}
-
-.marker-route {
-    border-color: var(--accent-blue);
-    color: var(--accent-blue);
-}
-
-.marker-exclusion {
-    border-color: var(--danger);
-    color: var(--danger);
-}
-
-.marker-assembly {
-    border-color: var(--secondary-color);
-    color: var(--secondary-color);
-}
-
-.marker-danger {
-    border-color: var(--warning);
-    color: var(--warning);
-}
-
-.marker-custom {
-    border-color: var(--accent-purple);
-    color: var(--accent-purple);
-}
-/* Füge diese CSS-Regeln zu deiner style.css hinzu */
-
-/* Status Cards - Bewegung bei geöffneter Sidebar */
-.status-grid {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px;
-    z-index: 999; /* Niedriger als Sidebar (1000) */
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth movement */
-}
-
-/* Status Cards bewegen sich wenn Sidebar offen ist */
-.sidebar.open ~ .status-grid,
-body.sidebar-open .status-grid {
-    left: 400px; /* Sidebar width + margin */
-}
-
-/* MapLibre Controls - Bewegung bei geöffneter Sidebar */
-.maplibregl-ctrl-group {
-    background: var(--surface) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
-    backdrop-filter: blur(20px) !important;
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Smooth movement */
-}
-
-/* MapLibre Controls bewegen sich wenn Sidebar offen ist */
-.sidebar.open ~ #map .maplibregl-ctrl-group,
-body:has(.sidebar.open) .maplibregl-ctrl-group {
-    margin-left: 380px !important; /* Sidebar width */
-}
-
-/* Top Controls - Bewegung bei geöffneter Sidebar */
-.top-controls {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 999; /* Niedriger als Sidebar */
-    display: flex;
-    gap: 12px;
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth movement */
-}
-
-/* Top Controls bewegen sich wenn Sidebar offen ist */
-.sidebar.open ~ .top-controls,
-body:has(.sidebar.open) .top-controls {
-    left: 400px; /* Sidebar width + margin */
-}
-
-/* Alternative: Verstecke Status Cards bei geöffneter Sidebar */
-.sidebar.open ~ .status-grid {
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* Legend anpassen */
-.legend {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
-    backdrop-filter: blur(20px);
-    z-index: 999; /* Niedriger als Sidebar und Info Panel */
-    min-width: 200px;
-}
-
-/* Responsive Anpassungen */
-@media (max-width: 768px) {
-    .sidebar {
-        width: 100vw;
-        left: -100vw;
-    }
-
-    /* Bei mobilen Geräten Status Cards ausblenden wenn Sidebar offen */
-    .sidebar.open ~ .status-grid,
-    .sidebar.open ~ .legend {
-        display: none;
-    }
-
-    /* Top Controls bei mobil ganz ausblenden */
-    .sidebar.open ~ .top-controls {
-        opacity: 0;
-        pointer-events: none;
-    }
-}
-
-/* Extra: Smooth Sidebar Toggle */
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: -400px;
-    width: 380px;
-    height: 100vh;
-    background: var(--surface);
-    backdrop-filter: blur(20px);
-    border-right: 1px solid var(--border-color);
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1000;
-    overflow-y: auto;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-}
-
-.sidebar.open {
-    left: 0;
-}
-
-/* Diese Regeln verschieben die anderen Elemente, wenn der Body die Klasse hat */
-body.sidebar-open .status-grid {
-    left: 400px; /* Sidebar width + margin */
-    /* Entferne hier opacity und pointer-events, wenn du sie bewegen und nicht verstecken willst */
-}
-
-body.sidebar-open .top-controls {
-    left: 400px; /* Sidebar width + margin */
-    /* Entferne hier opacity und pointer-events, wenn du sie bewegen und nicht verstecken willst */
-}
-
-body.sidebar-open .maplibregl-ctrl-group {
-    margin-left: 380px !important; /* Sidebar width */
-}
-/* Füge diese CSS-Regeln zu deiner style.css hinzu */
-
-
-/* Füge diese CSS-Regeln zu deiner style.css hinzu */
 
 /* =================================
-   1. DRAW CONTROLS KOMPLETT AUSBLENDEN
-   ================================= */
+ 🗺️ MAP CONTROLS & POPUPS
+ ================================= */
 
-/* MapLibre/Mapbox Draw Controls komplett verstecken */
+/* Hide Default MapLibre Controls */
 .maplibregl-ctrl-top-left,
 .mapboxgl-ctrl-top-left,
 .maplibregl-ctrl-group,
 .mapboxgl-ctrl-group {
-    display: none !important;
+  display: none !important;
 }
 
-/* Alternative: Nur die Draw Controls, nicht alle Controls */
-/*
-.maplibregl-ctrl-top-left .maplibregl-ctrl-group,
-.mapboxgl-ctrl-top-left .mapboxgl-ctrl-group {
-    display: none !important;
-}
-*/
-
-/* =================================
-   2. SELECT-BOX SCHRIFT/HINTERGRUND FIX
-   ================================= */
-
-/* Modern Select Fix - Korrekte Farben */
-.modern-select {
-    width: 100%;
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.08) !important; /* Dunkler Hintergrund */
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-primary) !important; /* Weiße Schrift */
-    font-size: 14px;
-    transition: all 0.2s ease;
-    appearance: none; /* Entfernt Standard-Browser-Styling */
-    cursor: pointer;
+/* Custom Map Popup Styles */
+.maplibregl-popup-content {
+  background: var(--surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
 }
 
-.modern-select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.1);
-    background: rgba(255, 255, 255, 0.12) !important;
+.maplibregl-popup-close-button {
+  color: var(--text-primary) !important;
+  font-size: 18px !important;
+  right: 8px !important;
+  top: 8px !important;
 }
 
-.modern-select:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
+.maplibregl-popup-tip {
+  border-top-color: var(--surface) !important;
 }
 
-/* Select Options Styling */
-.modern-select option {
-    background: var(--background-dark) !important; /* Dunkler Hintergrund für Optionen */
-    color: var(--text-primary) !important; /* Weiße Schrift für Optionen */
-    padding: 8px;
+/* Custom Markers */
+.custom-marker {
+  background: var(--surface);
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
 }
 
-.modern-select option:hover,
-.modern-select option:checked {
-    background: var(--primary-color) !important;
-    color: white !important;
+.custom-marker:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Custom Arrow für Select */
-.modern-select {
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 12px center !important;
-    background-size: 16px !important;
-    padding-right: 40px !important;
+.custom-marker-circle {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-marker-circle:hover {
+  transform: scale(1.1);
 }
 
 /* =================================
-   3. ALLE FORM INPUTS EINHEITLICH
-   ================================= */
+ 💾 REAL-TIME UI ELEMENTS
+ ================================= */
 
-/* Modern Input Fix */
-.modern-input {
-    width: 100%;
-    padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-primary) !important;
-    font-size: 14px;
-    transition: all 0.2s ease;
+#save-indicator {
+  position: fixed;
+  top: 20px;
+  right: 350px;
+  background: var(--success);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 1003;
+  opacity: 0;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.modern-input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.1);
-    background: rgba(255, 255, 255, 0.12) !important;
+#save-indicator.saving {
+  background: var(--warning);
 }
 
-.modern-input::placeholder {
-    color: var(--text-secondary) !important;
-    opacity: 0.7;
+#save-indicator.error {
+  background: var(--danger);
 }
 
-/* Textarea spezifisch */
-.modern-input[type="textarea"],
-textarea.modern-input {
-    resize: vertical;
-    min-height: 80px;
+#save-indicator .fa-spin {
+  animation: spin 1s linear infinite;
 }
 
-/* Date Input spezifisch */
-.modern-input[type="date"] {
-    color-scheme: dark; /* Macht Date-Picker dunkel */
+.realtime-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.stat-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--secondary-color);
 }
 
 /* =================================
-   4. FIREFOX/SAFARI KOMPATIBILITÄT
-   ================================= */
+ 🔧 BROWSER COMPATIBILITY
+ ================================= */
 
 /* Firefox Select Fix */
 @-moz-document url-prefix() {
-    .modern-select {
-        background: var(--background-dark) !important;
-        color: var(--text-primary) !important;
-    }
+  .modern-select {
+      background: var(--background-dark) !important;
+      color: var(--text-primary) !important;
+  }
 }
 
 /* Safari Select Fix */
 @supports (-webkit-appearance: none) {
-    .modern-select {
-        -webkit-appearance: none;
-        background: rgba(255, 255, 255, 0.08) !important;
-        color: var(--text-primary) !important;
-    }
+  .modern-select {
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: var(--text-primary) !important;
+  }
 }
-
-/* Füge diese CSS-Regeln zu deiner style.css hinzu */
 
 /* =================================
-   REAL-TIME UI STYLES
-   ================================= */
+ 🎨 ANIMATIONS
+ ================================= */
 
-/* Save Indicator (wird per JavaScript erstellt) */
-#save-indicator {
-    position: fixed;
-    top: 20px;
-    right: 350px;
-    background: var(--success);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 12px;
-    z-index: 1003;
-    opacity: 0;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    gap: 6px;
+@keyframes spin {
+  from {
+      transform: rotate(0deg);
+  }
+  to {
+      transform: rotate(360deg);
+  }
 }
 
-#save-indicator.saving {
-    background: var(--warning);
+/* =================================
+ 📱 RESPONSIVE DESIGN
+ ================================= */
+
+/* Sidebar Layout Adjustments */
+body.sidebar-open .status-grid {
+  left: 400px;
 }
 
-#save-indicator.error {
-    background: var(--danger);
+body.sidebar-open .top-controls {
+  left: 400px;
 }
 
-#save-indicator .fa-spin {
-    animation: spin 1s linear infinite;
+body.sidebar-open .maplibregl-ctrl-group {
+  margin-left: 380px !important;
 }
 
-/* Real-time Stats Grid */
-.realtime-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin: 15px 0;
-}
-
-.stat-item {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 12px;
-    border-radius: 8px;
-    text-align: center;
-    border: 1px solid var(--border-color);
-}
-
-.stat-label {
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-}
-
-.stat-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--secondary-color);
-}
-
-/* Auto-Save Status */
-#autosave-status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 500;
-}
-
-#autosave-status.paused {
-    color: var(--warning);
-}
-
-#autosave-status.error {
-    color: var(--danger);
-}
-
-/* Data Management Section */
-.section .control-group {
-    margin-bottom: 15px;
-}
-
-.section .control-group:last-child {
-    margin-bottom: 0;
-}
-
-/* Connection Status Indicator */
-.connection-status {
-    position: fixed;
-    bottom: 200px;
-    right: 20px;
-    background: var(--surface);
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    width: 12px;
-    height: 12px;
-    z-index: 1000;
-    transition: all 0.3s ease;
-}
-
-.connection-status.online {
-    background: var(--success);
-    box-shadow: 0 0 10px var(--success);
-}
-
-.connection-status.offline {
-    background: var(--danger);
-    box-shadow: 0 0 10px var(--danger);
-}
-
-.connection-status.syncing {
-    background: var(--warning);
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
-}
-
-/* Responsive Anpassungen für Save Indicator */
+/* Mobile Responsiveness */
 @media (max-width: 768px) {
-    #save-indicator {
-        right: 20px;
-        top: 80px;
-        font-size: 11px;
-        padding: 6px 12px;
-    }
+  .sidebar {
+      width: 100vw;
+      left: -100vw;
+  }
 
-    .realtime-stats {
-        grid-template-columns: 1fr;
-        gap: 8px;
-    }
+  .sidebar.open ~ .status-grid,
+  .sidebar.open ~ .legend {
+      display: none;
+  }
 
-    .stat-item {
-        padding: 8px;
-    }
+  .sidebar.open ~ .top-controls {
+      opacity: 0;
+      pointer-events: none;
+  }
 
-    .stat-value {
-        font-size: 16px;
-    }
-}
+  .marker-selection-grid {
+      grid-template-columns: repeat(2, 1fr);
+  }
 
-/* Live Update Animation */
-.live-update {
-    position: relative;
-    overflow: hidden;
-}
-
-.live-update::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.3), transparent);
-    animation: shimmer 1.5s ease-in-out;
-}
-
-@keyframes shimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
-}
-
-/* Status Cards mit Live-Update Indicator */
-.status-card.updating {
-    border-left: 3px solid var(--secondary-color);
-    animation: glow 0.5s ease-in-out;
-}
-
-@keyframes glow {
-    0% { box-shadow: 0 0 0 rgba(0, 255, 136, 0); }
-    50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.3); }
-    100% { box-shadow: 0 0 0 rgba(0, 255, 136, 0); }
-}
-
-/* Backup Status */
-.backup-status {
-    font-size: 10px;
-    color: var(--text-secondary);
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.backup-status.success {
-    color: var(--success);
-}
-
-.backup-status.warning {
-    color: var(--warning);
-}
-
-/* Auto-Save Toggle Button */
-.button-small {
-    padding: 6px 12px;
-    font-size: 11px;
-    margin-bottom: 4px;
-}
-
-/* Data Management Buttons */
-.modern-button.button-warning:hover {
-    background: #e55a00;
-    box-shadow: 0 4px 12px rgba(255, 165, 2, 0.3);
-}
-
-/* Version Info */
-.version-info {
-    font-size: 10px;
-    color: var(--text-secondary);
-    text-align: center;
-    margin-top: 10px;
-    padding: 5px;
-    border-top: 1px solid var(--border-color);
-}
-
-/* Last Save Time Highlight */
-#last-save-time {
-    color: var(--secondary-color);
-    font-weight: 500;
-}
-
-/* Progress Bar für Sync */
-.sync-progress {
-    width: 100%;
-    height: 3px;
-    background: var(--border-color);
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 10px 0;
-}
-
-.sync-progress-bar {
-    height: 100%;
-    background: var(--secondary-color);
-    width: 0%;
-    transition: width 0.3s ease;
-    border-radius: 2px;
-}
-
-/* Network Status */
-.network-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin-top: 8px;
-}
-
-.network-status.online {
-    color: var(--success);
-}
-
-.network-status.offline {
-    color: var(--danger);
-}
-.live-update {
-    animation: glow 1.5s ease-in-out;
-}
-
-@keyframes glow {
-    0%, 100% { box-shadow: 0 0 5px var(--success); }
-    50% { box-shadow: 0 0 20px var(--success); }
-}
-
-.updating {
-    transform: scale(1.05);
-    transition: transform 0.3s ease;
-}
-
-/* =================================
-   TOAST NOTIFICATIONS
-   ================================= */
-   #toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.toast {
-    padding: 15px 20px;
-    border-radius: 8px;
-    color: white;
-    font-size: 14px;
-    font-weight: 500;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    opacity: 0;
-    transform: translateX(100%);
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.toast.show {
-    opacity: 1;
-    transform: translateX(0);
-}
-
-.toast.success { background: var(--success); }
-.toast.error { background: var(--danger); }
-.toast.info { background: var(--accent-blue); }
-
-
-/* =================================
-   HYBRID SIDEBAR REDESIGN
-   ================================= */
-
-/* Grund-Layout der Sidebar anpassen */
-.sidebar-content {
-    padding: 0;
-}
-
-/* Sektionen werden zu reinen Trenn-Elementen */
-.section {
-    background: transparent;
-    margin-bottom: 0;
-    border: none;
-    border-bottom: 1px solid var(--border-color);
-    border-radius: 0;
-    overflow: visible; /* Wichtig für Schatten etc. */
-}
-.section:last-of-type {
-    border-bottom: none;
-}
-
-/* Header als Haupt-Navigationselement stylen */
-.section-header {
-    background: transparent;
-    padding: 16px 20px;
-    border-bottom: none;
-    transition: background 0.2s ease-out;
-}
-.section-header:hover {
-    background: rgba(255, 255, 255, 0.04);
-}
-
-/* Sanfte Animation für den Chevron-Pfeil */
-.section-toggle {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.section.expanded .section-toggle {
-    transform: rotate(180deg);
-}
-
-
-
-/* Bessere Abstände für Formularelemente */
-.control-group {
-    margin-bottom: 22px;
-}
-.control-label {
-    margin-bottom: 10px;
-}
-
-/* GRID-LAYOUT FÜR BUTTONS (HIER KOMMEN DIE NEUEN IDs ZUM EINSATZ) */
-#drawing-tools-content,
-#einsatzplanung-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Zwei Spalten */
-    gap: 12px;
-}
-#drawing-tools-content .modern-button,
-#einsatzplanung-content .modern-button {
-    margin-bottom: 0; /* Entfernt unnötigen Abstand im Grid */
-    font-size: 13px; /* Etwas kleiner für kompakten Look */
-}
-/* =================================
-   SUCHFUNKTION STYLES
-   ================================= */
-   .search-wrapper {
-    position: relative;
-}
-
-#hydrantSearchInput {
-    padding-right: 40px; /* Platz für den Löschen-Button */
-}
-
-.search-clear {
-    position: absolute;
-    top: 50%;
-    right: 0;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 100%;
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-#hydrantSearchInput:not(:placeholder-shown) + .search-clear {
-    opacity: 0.7;
-}
-#hydrantSearchInput:not(:placeholder-shown) + .search-clear:hover {
-    opacity: 1;
-    color: var(--primary-color);
-}
-/* Marker Icon Selection Grid - Verbessert */
-/* Marker Icon Selection Grid - Verbessert */
-.marker-selection-grid {
-    display: grid;
-    /* Optional: Mehr Spalten, wenn die Kästen kleiner werden */
-    /* grid-template-columns: repeat(4, 1fr); /* Zum Beispiel 4 Spalten */
-    grid-template-columns: repeat(3, 1fr); /* Oder 3 Spalten, wie ursprünglich */
-    gap: 8px; /* Kleinerer Abstand zwischen den Kästen */
-    margin: 15px 0;
-    max-height: 200px;
-    overflow-y: auto;
-    padding: 5px;
-}
-
-.marker-option {
-    aspect-ratio: 1; /* Hält die Kästen quadratisch */
-    background: rgba(255, 255, 255, 0.08);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    padding: 8px; /* REDUZIERTES PADDING */
-    transition: all 0.2s ease;
-    text-align: center;
-}
-
-.marker-option i { /* Diese Regel ist NEU, um Font Awesome Icons zu stylen */
-    font-size: 20px; /* Kleinere Icon-Größe */
-    margin-bottom: 4px; /* Weniger Abstand zwischen Icon und Text */
-}
-
-.marker-option img { /* Für den Fall, dass du Bilder statt Font Awesome nutzt */
-    width: 24px; /* Kleinere Bildgröße */
-    height: 24px;
-    margin-bottom: 4px;
-    filter: brightness(0) invert(1);
-}
-
-.marker-option span {
-    font-size: 10px; /* Kleinere Schriftgröße für den Namen */
-    font-weight: 500;
-    /* margin-top: 4px; /* Kann beibehalten oder reduziert werden, falls padding oben schon ausreicht */
-    line-height: 1.2; /* Passt die Zeilenhöhe an, falls der Name mehrzeilig ist */
-}
-
-
-/* Die :hover und .selected Styles bleiben wie besprochen, nur die Basisgröße wird kleiner */
-.marker-option:hover {
-    border-color: var(--primary-color);
-    background: rgba(255, 68, 68, 0.1);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 68, 68, 0.2);
-}
-
-.marker-option.selected {
-    border-color: var(--primary-color);
-    background: var(--primary-color);
-    color: white;
-    transform: scale(1.05); /* Eine leichte Vergrößerung der Auswahl ist immer noch sinnvoll */
-    box-shadow: 0 6px 20px rgba(255, 68, 68, 0.4);
-    z-index: 1;
-}
-
-/* Wichtig: Auch die Icons/Bilder im Selected-State anpassen, falls sie sonst wieder groß werden */
-
-
-.marker-option span {
-    font-size: 11px;
-    font-weight: 500;
-    margin-top: 4px;
-}
-
-/* Custom Marker auf der Karte */
-.custom-marker-circle {
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.custom-marker-circle:hover {
-    transform: scale(1.1);
-}
-
-/* Scrollbar für Icon Grid */
-.marker-selection-grid::-webkit-scrollbar {
-    width: 6px;
-}
-
-.marker-selection-grid::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
-}
-
-.marker-selection-grid::-webkit-scrollbar-thumb {
-    background: var(--primary-color);
-    border-radius: 3px;
-}
-
-.marker-selection-grid::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-dark);
+  #drawing-tools-content,
+  #einsatzplanung-content {
+      grid-template-columns: 1fr;
+  }
 }

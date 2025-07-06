@@ -1,4 +1,4 @@
-<!-- src/components/MapContainer.vue - VOLLSTÄNDIGE VERSION MIT ZEICHENTOOLS -->
+<!-- src/components/MapContainer.vue - VOLLSTÄNDIGE VERSION MIT ICONS -->
 <template>
   <div id="map" ref="mapContainer" class="map-container"></div>
 </template>
@@ -609,7 +609,7 @@ const loadDrawingsFromStore = () => {
   }
 }
 
-// 🎯 Map Events Setup
+// 🎯 Map Events Setup - VOLLSTÄNDIG KORRIGIERT
 const setupMapEvents = () => {
   console.log('🎯 Setup Map Events für Position Picking...')
 
@@ -627,7 +627,7 @@ const setupMapEvents = () => {
     console.log('🗺️ Normal map click')
   })
 
-  // Layer Click Events
+  // 🚒 Hydrant Click Events
   map.on('click', 'hydrants-layer', (e) => {
     const hydrant = e.features[0].properties
     console.log('🚒 Hydrant geklickt:', hydrant)
@@ -635,44 +635,44 @@ const setupMapEvents = () => {
     hydrantsStore.selectHydrant(hydrant.id)
   })
 
-  map.on('click', 'pois-layer', (e) => {
+  // 🏭 POI Click Events (beide Layer abfangen)
+  const handlePOIClick = (e) => {
     const poi = e.features[0].properties
     console.log('🏭 POI geklickt:', poi)
     showPOIPopup(e.features[0], e.lngLat)
-    poiStore.selectPOI(poi.id) // ✅ DIESE ZEILE HINZUFÜGEN
-  })
+    poiStore.selectPOI(poi.id)
+  }
 
-  map.on('click', 'markers-layer', (e) => {
+  map.on('click', 'pois-layer', handlePOIClick)
+  map.on('click', 'pois-icons', handlePOIClick)
+
+  // 📍 Marker Click Events (beide Layer abfangen)
+  const handleMarkerClick = (e) => {
     const marker = e.features[0].properties
     console.log('📍 Marker geklickt:', marker)
     showMarkerPopup(e.features[0], e.lngLat)
-    markersStore.selectMarker(marker.id) // ✅ DIESE ZEILE HINZUFÜGEN
-  })
+    markersStore.selectMarker(marker.id)
+  }
 
-  // Cursor change events
-  map.on('mouseenter', 'hydrants-layer', () => {
-    map.getCanvas().style.cursor = 'pointer'
-  })
+  map.on('click', 'markers-layer', handleMarkerClick)
+  map.on('click', 'markers-icons', handleMarkerClick)
 
-  map.on('mouseleave', 'hydrants-layer', () => {
-    map.getCanvas().style.cursor = ''
-  })
+  // 🖱️ Cursor Events für alle Layer
+  const setupCursorEvents = (layerName) => {
+    map.on('mouseenter', layerName, () => {
+      map.getCanvas().style.cursor = 'pointer'
+    })
+    map.on('mouseleave', layerName, () => {
+      map.getCanvas().style.cursor = ''
+    })
+  }
 
-  map.on('mouseenter', 'pois-layer', () => {
-    map.getCanvas().style.cursor = 'pointer'
-  })
-
-  map.on('mouseleave', 'pois-layer', () => {
-    map.getCanvas().style.cursor = ''
-  })
-
-  map.on('mouseenter', 'markers-layer', () => {
-    map.getCanvas().style.cursor = 'pointer'
-  })
-
-  map.on('mouseleave', 'markers-layer', () => {
-    map.getCanvas().style.cursor = ''
-  })
+  // Cursor Events für alle interaktiven Layer
+  setupCursorEvents('hydrants-layer')
+  setupCursorEvents('pois-layer')
+  setupCursorEvents('pois-icons')
+  setupCursorEvents('markers-layer')
+  setupCursorEvents('markers-icons')
 }
 
 // 🎯 Handle Position Picking
@@ -709,6 +709,9 @@ const handlePositionPick = (lngLat) => {
       console.log('✅ Marker hinzugefügt:', newMarker)
       emit('position-picked', { type: 'marker', data: newMarker })
     }
+
+    // ✅ ERFOLGREICHEN RESET HINZUFÜGEN:
+    uiStore.resetPositionPicking()
 
     // Cursor zurücksetzen
     map.getCanvas().style.cursor = ''
@@ -786,9 +789,9 @@ const refreshHydrantLayer = () => {
   }
 }
 
-// 🏭 POI Layer
+// 🏭 POI Layer mit Icons
 const addPOILayer = () => {
-  console.log('🏭 Füge POI Layer hinzu...')
+  console.log('🏭 Füge POI Layer mit Icons hinzu...')
 
   try {
     map.addSource('pois', {
@@ -799,12 +802,13 @@ const addPOILayer = () => {
       },
     })
 
+    // 1. 🎨 Farbiger Kreis-Hintergrund
     map.addLayer({
       id: 'pois-layer',
       type: 'circle',
       source: 'pois',
       paint: {
-        'circle-radius': 10,
+        'circle-radius': 16, // Größer für Icon-Platz
         'circle-color': [
           'case',
           ['==', ['get', 'category'], 'gas_station'],
@@ -819,13 +823,46 @@ const addPOILayer = () => {
           '#20c997',
           '#cccccc',
         ],
-        'circle-stroke-width': 2,
+        'circle-stroke-width': 3,
         'circle-stroke-color': '#ffffff',
+        'circle-opacity': 0.9,
+      },
+    })
+
+    // 2. 🎯 Icon Layer darüber
+    map.addLayer({
+      id: 'pois-icons',
+      type: 'symbol',
+      source: 'pois',
+      layout: {
+        'text-field': [
+          'case',
+          ['==', ['get', 'category'], 'gas_station'],
+          '⛽',
+          ['==', ['get', 'category'], 'windmill'],
+          '💨',
+          ['==', ['get', 'category'], 'power_plant'],
+          '⚡',
+          ['==', ['get', 'category'], 'oil_pump'],
+          '🛢️',
+          ['==', ['get', 'category'], 'tanks'],
+          '🗂️',
+          '🏭',
+        ],
+        'text-size': 16,
+        'text-anchor': 'center',
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: {
+        'text-color': '#ffffff',
+        'text-halo-color': 'rgba(0, 0, 0, 0.5)',
+        'text-halo-width': 1,
       },
     })
 
     refreshPOILayer()
-    console.log('✅ POI Layer hinzugefügt')
+    console.log('✅ POI Layer mit Icons hinzugefügt')
   } catch (error) {
     console.error('❌ POI Layer Fehler:', error)
   }
@@ -849,9 +886,9 @@ const refreshPOILayer = () => {
   }
 }
 
-// 📍 Markers Layer
+// 📍 Markers Layer mit Icons
 const addMarkersLayer = () => {
-  console.log('📍 Füge Markers Layer hinzu...')
+  console.log('📍 Füge Markers Layer mit Icons hinzu...')
 
   try {
     map.addSource('markers', {
@@ -862,12 +899,13 @@ const addMarkersLayer = () => {
       },
     })
 
+    // 1. 🎨 Farbiger Kreis-Hintergrund
     map.addLayer({
       id: 'markers-layer',
       type: 'circle',
       source: 'markers',
       paint: {
-        'circle-radius': 8,
+        'circle-radius': 14, // Etwas kleiner als POIs
         'circle-color': [
           'case',
           ['==', ['get', 'category'], 'route'],
@@ -884,13 +922,48 @@ const addMarkersLayer = () => {
           '#ff6b35',
           '#cccccc',
         ],
-        'circle-stroke-width': 2,
+        'circle-stroke-width': 3,
         'circle-stroke-color': '#ffffff',
+        'circle-opacity': 0.9,
+      },
+    })
+
+    // 2. 🎯 Icon Layer darüber
+    map.addLayer({
+      id: 'markers-icons',
+      type: 'symbol',
+      source: 'markers',
+      layout: {
+        'text-field': [
+          'case',
+          ['==', ['get', 'category'], 'route'],
+          '🛣️',
+          ['==', ['get', 'category'], 'assembly'],
+          '👥',
+          ['==', ['get', 'category'], 'warning'],
+          '⚠️',
+          ['==', ['get', 'category'], 'star'],
+          '⭐',
+          ['==', ['get', 'category'], 'staging'],
+          '🚛',
+          ['==', ['get', 'category'], 'command'],
+          '🚩',
+          '📍',
+        ],
+        'text-size': 14,
+        'text-anchor': 'center',
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: {
+        'text-color': '#ffffff',
+        'text-halo-color': 'rgba(0, 0, 0, 0.8)',
+        'text-halo-width': 1,
       },
     })
 
     refreshMarkersLayer()
-    console.log('✅ Markers Layer hinzugefügt')
+    console.log('✅ Markers Layer mit Icons hinzugefügt')
   } catch (error) {
     console.error('❌ Markers Layer Fehler:', error)
   }
@@ -975,7 +1048,14 @@ const showMarkerPopup = (feature, lngLat) => {
 // 🎛️ Layer Toggle Management
 const toggleLayer = (layerName, visible) => {
   if (map && map.getLayer(layerName)) {
-    map.setLayoutProperty(layerName, 'visibility', visible ? 'visible' : 'none')
+    const visibility = visible ? 'visible' : 'none'
+    map.setLayoutProperty(layerName, 'visibility', visibility)
+
+    // Auch Icon-Layer toggling (falls vorhanden)
+    const iconLayerName = layerName.replace('-layer', '-icons')
+    if (map.getLayer(iconLayerName)) {
+      map.setLayoutProperty(iconLayerName, 'visibility', visibility)
+    }
   }
 }
 
