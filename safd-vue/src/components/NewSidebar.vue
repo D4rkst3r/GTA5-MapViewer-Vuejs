@@ -1,4 +1,4 @@
-<!-- src/components/Sidebar.vue - MIT BEARBEITUNGSFUNKTION -->
+<!-- src/components/Sidebar.vue - MIT WARTUNGSÜBERSICHT -->
 <template>
   <div class="sidebar" :class="{ open: isOpen }">
     <!-- Header -->
@@ -60,7 +60,7 @@
             <span class="stat-value">{{ hydrantsStore.hydrants.length }}</span>
             <span class="stat-label">Gesamt</span>
           </div>
-          <div class="stat-item">
+          <div class="stat-item" :class="{ 'stat-urgent': hydrantStats.maintenance > 0 }">
             <span class="stat-value">{{ hydrantStats.maintenance }}</span>
             <span class="stat-label">Wartung fällig</span>
           </div>
@@ -72,11 +72,20 @@
           Neuen Hydranten hinzufügen
         </button>
 
+        <!-- ✅ WARTUNGSÜBERSICHT BUTTON - Jetzt funktional! -->
+        <button @click="showMaintenanceModal" class="modern-button button-secondary">
+          <i class="fas fa-wrench"></i>
+          Wartungsübersicht
+          <span v-if="hydrantStats.maintenance > 0" class="urgent-badge">
+            {{ hydrantStats.maintenance }}
+          </span>
+        </button>
+
         <!-- ✅ HYDRANTENLISTE MIT BEARBEITUNG -->
         <div class="hydrant-list-section">
-          <div class="section-header">
+          <div class="section-header" @click="toggleHydrantList">
             <h4>Hydranten Liste</h4>
-            <button @click="toggleHydrantList" class="toggle-btn">
+            <button class="toggle-btn">
               <i :class="showHydrantList ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
             </button>
           </div>
@@ -86,7 +95,7 @@
               v-for="hydrant in filteredHydrants"
               :key="hydrant.id"
               class="hydrant-item"
-              :class="{ 'maintenance-due': hydrant.maintenanceDue }"
+              :class="{ 'maintenance-due': isMaintenanceDue(hydrant) }"
             >
               <div class="hydrant-info">
                 <div class="hydrant-title">
@@ -95,13 +104,16 @@
                     :style="{ color: getStatusColor(hydrant.status) }"
                   ></i>
                   Hydrant #{{ hydrant.id }}
+                  <span v-if="isMaintenanceDue(hydrant)" class="maintenance-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                  </span>
                 </div>
                 <div class="hydrant-details">
                   {{ hydrant.area }} • {{ hydrant.type }} • {{ hydrant.status }}
                 </div>
               </div>
               <div class="hydrant-actions">
-                <!-- ✅ BEARBEITEN BUTTON - Verwendet openHydrantForm -->
+                <!-- ✅ BEARBEITEN BUTTON -->
                 <button
                   @click="openHydrantForm(hydrant)"
                   class="action-btn edit-btn"
@@ -121,11 +133,6 @@
             </div>
           </div>
         </div>
-
-        <button @click="showMaintenanceModal" class="modern-button button-secondary">
-          <i class="fas fa-wrench"></i>
-          Wartungsübersicht
-        </button>
       </SidebarSection>
 
       <!-- POI Management -->
@@ -229,7 +236,7 @@
     </div>
   </div>
 
-  <!-- Modals -->
+  <!-- ✅ MODALS -->
   <HydrantForm
     v-model="showHydrantForm"
     :hydrant="modalData.hydrant"
@@ -237,6 +244,9 @@
   />
 
   <POIForm v-model="showPOIForm" :poi="modalData.poi" @poi-saved="onPOISaved" />
+
+  <!-- ✅ NEU: WARTUNGSÜBERSICHT MODAL -->
+  <MaintenanceModal v-model="showMaintenanceOverview" @edit-hydrant="onMaintenanceEditHydrant" />
 </template>
 
 <script setup>
@@ -252,6 +262,7 @@ import SidebarSection from './SidebarSection.vue'
 import ToggleSwitch from './ToggleSwitch.vue'
 import HydrantForm from './HydrantForm.vue'
 import POIForm from './POIForm.vue'
+import MaintenanceModal from './MaintenanceModal.vue' // ✅ NEU
 
 // 🎭 Props
 defineProps({
@@ -268,17 +279,18 @@ const userStore = useUserStore()
 const poiStore = usePOIStore()
 const uiStore = useUIStore()
 
-// 🎭 Modal State (lokal verwaltet)
+// 🎭 Modal State
 const modalData = ref({
   hydrant: null,
   poi: null,
 })
 const showHydrantForm = ref(false)
 const showPOIForm = ref(false)
+const showMaintenanceOverview = ref(false) // ✅ NEU
 
 // 📊 Reactive Data
 const drawingMode = ref('simple_select')
-const showHydrantList = ref(false) // ✅ NEU: Toggle für Hydrantenliste
+const showHydrantList = ref(false)
 
 // 🧮 Computed Properties
 const districts = computed(() => {
@@ -286,16 +298,13 @@ const districts = computed(() => {
   return [...new Set(allDistricts)].sort()
 })
 
-// ✅ NEU: Gefilterte Hydranten
 const filteredHydrants = computed(() => {
   let hydrants = hydrantsStore.hydrants
 
-  // Filter nach Bezirk
   if (hydrantsStore.filters.district) {
     hydrants = hydrants.filter((h) => h.area === hydrantsStore.filters.district)
   }
 
-  // Filter nach Suche
   if (hydrantsStore.filters.search) {
     const search = hydrantsStore.filters.search.toLowerCase()
     hydrants = hydrants.filter(
@@ -306,13 +315,19 @@ const filteredHydrants = computed(() => {
     )
   }
 
-  return hydrants.slice(0, 10) // Maximal 10 anzeigen
+  return hydrants.slice(0, 10)
 })
 
-// ✅ NEU: Hydrant Stats
+// ✅ ERWEITERTE HYDRANT STATS MIT WARTUNG
 const hydrantStats = computed(() => {
+  const today = new Date()
+  const maintenanceDue = hydrantsStore.hydrants.filter((h) => {
+    if (!h.nextService) return true // No service date = overdue
+    return new Date(h.nextService) < today
+  }).length
+
   return {
-    maintenance: hydrantsStore.hydrants.filter((h) => h.maintenanceDue).length,
+    maintenance: maintenanceDue,
   }
 })
 
@@ -349,8 +364,10 @@ const exportDrawings = () => {
   showToast('Zeichnungen exportiert', 'success')
 }
 
+// ✅ WARTUNGSÜBERSICHT - Jetzt funktional!
 const showMaintenanceModal = () => {
-  showToast('Wartungsübersicht öffnet sich...', 'info')
+  showMaintenanceOverview.value = true
+  console.log('🔧 Wartungsübersicht geöffnet')
 }
 
 // ✅ NEUE HYDRANTEN-FUNKTIONEN
@@ -376,14 +393,19 @@ const startAddingHydrant = () => {
   showToast('Klicke auf die Karte, um einen neuen Hydranten zu platzieren', 'info')
 }
 
-// ✅ BEARBEITUNGSFUNKTION - Verwendet openHydrantForm
+// ✅ BEARBEITUNGSFUNKTION
 const openHydrantForm = (hydrant = null) => {
   modalData.value.hydrant = hydrant
   showHydrantForm.value = true
   console.log('📝 Hydrant-Form geöffnet:', hydrant ? `#${hydrant.id}` : 'Neu')
 }
 
-// ✅ NEU: Hydrant löschen
+// ✅ HYDRANT AUS WARTUNGSÜBERSICHT BEARBEITEN
+const onMaintenanceEditHydrant = (hydrant) => {
+  console.log('🔧 Hydrant aus Wartungsübersicht bearbeiten:', hydrant.id)
+  openHydrantForm(hydrant)
+}
+
 const deleteHydrant = async (hydrantId) => {
   const confirmed = await showConfirm(`Hydrant #${hydrantId} wirklich löschen?`, 'Hydrant löschen')
 
@@ -393,7 +415,12 @@ const deleteHydrant = async (hydrantId) => {
   }
 }
 
-// ✅ NEU: Status-Farben
+// ✅ WARTUNG PRÜFEN
+const isMaintenanceDue = (hydrant) => {
+  if (!hydrant.nextService) return true
+  return new Date(hydrant.nextService) < new Date()
+}
+
 const getStatusColor = (status) => {
   switch (status) {
     case 'ok':
@@ -575,6 +602,7 @@ onMounted(() => {
   gap: 8px;
   margin-bottom: 8px;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .modern-button:hover {
@@ -601,6 +629,34 @@ onMounted(() => {
 .button-warning:hover {
   background: #e55a00;
   box-shadow: 0 4px 12px rgba(255, 165, 2, 0.3);
+}
+
+/* ✅ URGENT BADGE für Wartungsbutton */
+.urgent-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--danger);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 .search-wrapper {
@@ -662,6 +718,18 @@ onMounted(() => {
   padding: 12px;
   border-radius: 8px;
   text-align: center;
+  transition: all 0.2s ease;
+}
+
+/* ✅ URGENT STATS */
+.stat-item.stat-urgent {
+  background: rgba(255, 71, 87, 0.1);
+  border: 1px solid var(--danger);
+}
+
+.stat-item.stat-urgent .stat-value {
+  color: var(--danger);
+  animation: pulse 1.5s infinite;
 }
 
 .stat-value {
@@ -681,7 +749,7 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-/* ===== ✅ NEUE HYDRANTENLISTE STYLES ===== */
+/* ===== HYDRANTENLISTE STYLES ===== */
 .hydrant-list-section {
   margin: 16px 0;
   background: rgba(255, 255, 255, 0.02);
@@ -754,6 +822,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* ✅ WARTUNGSWARNUNG */
+.maintenance-warning {
+  color: var(--warning);
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0.3;
+  }
 }
 
 .hydrant-details {
