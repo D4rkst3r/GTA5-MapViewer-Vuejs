@@ -813,12 +813,12 @@ const addPOILayer = () => {
     const loadPOIIconsFromAssets = async () => {
       try {
         // POI Icons dynamisch importieren
-        const gasStationIcon = await import('@/assets/icons/gas_station.png')
-        const windmillIcon = await import('@/assets/icons/windmill.png')
-        const powerPlantIcon = await import('@/assets/icons/power_plant.png')
-        const oilPumpIcon = await import('@/assets/icons/oil_pump.png')
+        const gasStationIcon = await import('@/assets/icons/gas-station.png')
+        const windmillIcon = await import('@/assets/icons/wind.png')
+        const powerPlantIcon = await import('@/assets/icons/power-plant.png')
+        const oilPumpIcon = await import('@/assets/icons/oil-pump.png')
         const tanksIcon = await import('@/assets/icons/tanks.png')
-        const defaultPOIIcon = await import('@/assets/icons/poi.png')
+        const defaultPOIIcon = await import('@/assets/icons/star.png')
 
         // Icons in die Map laden
         const iconPromises = [
@@ -965,13 +965,13 @@ const addMarkersLayer = () => {
 
       try {
         // Icons dynamisch importieren
-        const routeIcon = await import('@/assets/icons/route.png')
-        const assemblyIcon = await import('@/assets/icons/assembly.png')
+        const routeIcon = await import('@/assets/icons/road.png')
+        const assemblyIcon = await import('@/assets/icons/gathering.png')
         const warningIcon = await import('@/assets/icons/warning.png')
         const starIcon = await import('@/assets/icons/star.png')
-        const stagingIcon = await import('@/assets/icons/staging.png')
-        const commandIcon = await import('@/assets/icons/command.png')
-        const markerIcon = await import('@/assets/icons/marker.png')
+        const stagingIcon = await import('@/assets/icons/pharmacy.png')
+        const commandIcon = await import('@/assets/icons/alert.png')
+        const markerIcon = await import('@/assets/icons/report.png')
 
         // Icons in die Map laden
         const iconPromises = [
