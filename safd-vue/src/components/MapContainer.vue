@@ -1,4 +1,4 @@
-<!-- src/components/MapContainer.vue - VOLLSTÄNDIGE VERSION MIT ICONS -->
+<!-- src/components/MapContainer.vue - EINFACHE KORRIGIERTE VERSION -->
 <template>
   <div id="map" ref="mapContainer" class="map-container"></div>
 </template>
@@ -28,11 +28,6 @@ const mapContainer = ref(null)
 let map = null
 let draw = null
 
-// 🗺️ Map Configuration
-const tileSize = 256
-const maxZoom = 5
-const geoBounds = [-180, -85, 180, 85]
-
 // 🎨 Drawing Styles Management
 let currentDrawingStyles = {
   strokeColor: '#ff4444',
@@ -41,7 +36,7 @@ let currentDrawingStyles = {
   fillOpacity: 0.3,
 }
 
-// 🏭 POI Categories für Category Layer
+// 🏭 POI Categories
 const poiCategories = {
   gas_station: { name: 'Tankstelle', color: '#ff6b35', icon: '⛽' },
   windmill: { name: 'Windrad', color: '#74c0fc', icon: '💨' },
@@ -52,673 +47,93 @@ const poiCategories = {
 
 // 📍 Marker Categories
 const markerCategories = {
-  route: { name: 'Anfahrtsweg', color: '#4287f5', icon: 'fas fa-route' },
-  assembly: { name: 'Sammelplatz', color: '#ff8800', icon: 'fas fa-users' },
-  warning: { name: 'Warnung', color: '#ff4757', icon: 'fas fa-exclamation-triangle' },
-  star: { name: 'Markierung', color: '#9d4edd', icon: 'fas fa-star' },
-  staging: { name: 'Bereitstellung', color: '#2ed573', icon: 'fas fa-truck' },
-  command: { name: 'Führungsstelle', color: '#ff6b35', icon: 'fas fa-flag' },
+  route: { name: 'Anfahrtsweg', color: '#4287f5', icon: '🚗' },
+  assembly: { name: 'Sammelplatz', color: '#ff8800', icon: '👥' },
+  warning: { name: 'Warnung', color: '#ff4757', icon: '⚠️' },
+  star: { name: 'Markierung', color: '#9d4edd', icon: '⭐' },
+  staging: { name: 'Bereitstellungsraum', color: '#2ed573', icon: '🏕️' },
+  command: { name: 'Einsatzleitung', color: '#ff6b35', icon: '🎯' },
 }
 
-// 🎨 Map Style Configuration
-const createMapStyle = () => ({
-  version: 8,
-  glyphs: 'https://api.maptiler.com/fonts/{fontstack}/{range}.pbf?key=ZyK9nG5JZdEGz82ucoJf',
-  sources: {
-    'gta5-road': {
-      type: 'raster',
-      tiles: ['tiles/road/{z}/{x}/{y}.png'],
-      tileSize: tileSize,
-      bounds: geoBounds,
-      maxzoom: maxZoom,
-      minzoom: 0,
-    },
-    'gta5-satellite': {
-      type: 'raster',
-      tiles: ['tiles/satellite/{z}/{x}/{y}.png'],
-      tileSize: tileSize,
-      bounds: geoBounds,
-      maxzoom: maxZoom,
-      minzoom: 0,
-    },
-    'gta5-atlas': {
-      type: 'raster',
-      tiles: ['tiles/atlas/{z}/{x}/{y}.png'],
-      tileSize: tileSize,
-      bounds: geoBounds,
-      maxzoom: maxZoom,
-      minzoom: 0,
-    },
-  },
-  layers: [
-    {
-      id: 'road-layer',
-      type: 'raster',
-      source: 'gta5-road',
-      paint: { 'raster-opacity': 1 },
-    },
-    {
-      id: 'satellite-layer',
-      type: 'raster',
-      source: 'gta5-satellite',
-      layout: { visibility: 'none' },
-      paint: { 'raster-opacity': 1 },
-    },
-    {
-      id: 'atlas-layer',
-      type: 'raster',
-      source: 'gta5-atlas',
-      layout: { visibility: 'none' },
-      paint: { 'raster-opacity': 1 },
-    },
-  ],
-})
-
-// 🎨 Enhanced MapboxDraw Styles mit Dynamic Colors
-const getDrawStyles = () => {
-  return [
-    // Polygon Fill (inactive)
-    {
-      id: 'gl-draw-polygon-fill-inactive',
-      type: 'fill',
-      filter: [
-        'all',
-        ['==', 'active', 'false'],
-        ['==', '$type', 'Polygon'],
-        ['!=', 'mode', 'static'],
-      ],
-      paint: {
-        'fill-color': currentDrawingStyles.fillColor,
-        'fill-outline-color': currentDrawingStyles.strokeColor,
-        'fill-opacity': currentDrawingStyles.fillOpacity,
-      },
-    },
-    // Polygon Fill (active)
-    {
-      id: 'gl-draw-polygon-fill-active',
-      type: 'fill',
-      filter: ['all', ['==', 'active', 'true'], ['==', '$type', 'Polygon']],
-      paint: {
-        'fill-color': currentDrawingStyles.fillColor,
-        'fill-outline-color': currentDrawingStyles.strokeColor,
-        'fill-opacity': currentDrawingStyles.fillOpacity * 0.8,
-      },
-    },
-    // Polygon Stroke (inactive)
-    {
-      id: 'gl-draw-polygon-stroke-inactive',
-      type: 'line',
-      filter: [
-        'all',
-        ['==', 'active', 'false'],
-        ['==', '$type', 'Polygon'],
-        ['!=', 'mode', 'static'],
-      ],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: {
-        'line-color': currentDrawingStyles.strokeColor,
-        'line-width': currentDrawingStyles.strokeWidth,
-      },
-    },
-    // Polygon Stroke (active)
-    {
-      id: 'gl-draw-polygon-stroke-active',
-      type: 'line',
-      filter: ['all', ['==', 'active', 'true'], ['==', '$type', 'Polygon']],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: {
-        'line-color': currentDrawingStyles.strokeColor,
-        'line-width': currentDrawingStyles.strokeWidth + 1,
-      },
-    },
-    // LineString (inactive)
-    {
-      id: 'gl-draw-line-inactive',
-      type: 'line',
-      filter: [
-        'all',
-        ['==', 'active', 'false'],
-        ['==', '$type', 'LineString'],
-        ['!=', 'mode', 'static'],
-      ],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: {
-        'line-color': currentDrawingStyles.strokeColor,
-        'line-width': currentDrawingStyles.strokeWidth,
-      },
-    },
-    // LineString (active)
-    {
-      id: 'gl-draw-line-active',
-      type: 'line',
-      filter: ['all', ['==', 'active', 'true'], ['==', '$type', 'LineString']],
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: {
-        'line-color': currentDrawingStyles.strokeColor,
-        'line-width': currentDrawingStyles.strokeWidth + 2,
-      },
-    },
-    // Points (inactive)
-    {
-      id: 'gl-draw-point-inactive',
-      type: 'circle',
-      filter: [
-        'all',
-        ['==', 'active', 'false'],
-        ['==', '$type', 'Point'],
-        ['!=', 'mode', 'static'],
-      ],
-      paint: {
-        'circle-radius': currentDrawingStyles.strokeWidth * 2 + 4,
-        'circle-color': currentDrawingStyles.fillColor,
-        'circle-stroke-width': currentDrawingStyles.strokeWidth,
-        'circle-stroke-color': currentDrawingStyles.strokeColor,
-      },
-    },
-    // Points (active)
-    {
-      id: 'gl-draw-point-active',
-      type: 'circle',
-      filter: ['all', ['==', 'active', 'true'], ['==', '$type', 'Point']],
-      paint: {
-        'circle-radius': currentDrawingStyles.strokeWidth * 2 + 6,
-        'circle-color': currentDrawingStyles.fillColor,
-        'circle-stroke-width': currentDrawingStyles.strokeWidth + 1,
-        'circle-stroke-color': currentDrawingStyles.strokeColor,
-      },
-    },
-    // Vertex points
-    {
-      id: 'gl-draw-polygon-and-line-vertex-inactive',
-      type: 'circle',
-      filter: ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point']],
-      paint: {
-        'circle-radius': 5,
-        'circle-color': '#ffffff',
-        'circle-stroke-width': 2,
-        'circle-stroke-color': currentDrawingStyles.strokeColor,
-      },
-    },
-  ]
-}
-
-// 🔧 Map Initialization
+// 🚀 Map Initialization - VEREINFACHT
 const initializeMap = () => {
-  console.log('🗺️ Initialisiere Karte...')
+  console.log('🗺️ Initialisiere MapLibre GL...')
 
   try {
     map = new maplibregl.Map({
       container: mapContainer.value,
-      style: createMapStyle(),
+      style: {
+        version: 8,
+        sources: {},
+        layers: [],
+      },
       center: [0, 0],
       zoom: 2,
-      minZoom: 0,
-      maxZoom: maxZoom,
-      renderWorldCopies: false,
-      attributionControl: false,
     })
 
-    // 🎬 Map Events
     map.on('load', () => {
-      console.log('✅ Karte geladen!')
-
-      // Drawing System initialisieren
-      initializeDrawing()
-
-      // Enhanced Drawing Events
-      setupEnhancedDrawingEvents()
-
-      // Drawing Event Listeners für Sidebar
-      setupDrawingEventListeners()
-
-      // Map Events für Position Picking setup
+      console.log('✅ Map geladen')
+      setupBaseLayers()
+      setupDataLayers()
       setupMapEvents()
+      setupDrawingTools()
 
-      // ✅ ALLE Layer hinzufügen
-      addHydrantLayer()
-      addPOILayer()
-      addMarkersLayer()
-
-      // Drawings aus Store laden
-      loadDrawingsFromStore()
-
-      // Map Store aktualisieren
       mapStore.setMap(map)
-
-      // Parent Component benachrichtigen
       emit('map-ready', map)
 
-      // Debug Functions exposed
-      exposeDrawingFunctions()
-    })
-
-    // Standard Map Events
-    map.on('zoom', () => {
-      mapStore.updateZoom(map.getZoom())
-    })
-
-    map.on('move', () => {
-      mapStore.updateCenter(map.getCenter())
+      console.log('🎉 MapContainer vollständig initialisiert')
     })
 
     map.on('error', (e) => {
-      console.error('❌ Map error:', e)
+      console.error('❌ Map Error:', e)
     })
   } catch (error) {
-    console.error('❌ Map Initialisierung fehlgeschlagen:', error)
+    console.error('❌ Map Initialisierung Fehler:', error)
   }
 }
 
-// ✏️ Drawing System
-const initializeDrawing = () => {
-  try {
-    draw = new MapboxDraw({
-      displayControlsDefault: false,
-      controls: {
-        polygon: false,
-        line_string: false,
-        point: false,
-        trash: false,
-      },
-      defaultMode: 'simple_select',
-      styles: getDrawStyles(),
-    })
+// 🎨 Setup Base Layers
+const setupBaseLayers = () => {
+  console.log('🎨 Setup Base Layers...')
 
-    map.addControl(draw, 'top-left')
-
-    console.log('✅ Drawing System initialisiert')
-  } catch (error) {
-    console.error('❌ Drawing System Fehler:', error)
-  }
-}
-
-// 🎨 Enhanced Drawing Events
-const setupEnhancedDrawingEvents = () => {
-  if (!map || !draw) return
-
-  // Drawing Created
-  map.on('draw.create', (e) => {
-    console.log('🎨 Zeichnung erstellt:', e.features[0].geometry.type)
-    updateDrawingsInStore()
-
-    // Show success feedback
-    const feature = e.features[0]
-    const type = feature.geometry.type
-    const typeNames = {
-      Point: 'Punkt',
-      LineString: 'Linie',
-      Polygon: 'Polygon',
-    }
-
-    if (window.showToast) {
-      window.showToast(`${typeNames[type] || 'Zeichnung'} erstellt`, 'success')
-    }
-
-    // Auto-switch back to select mode after drawing
-    setTimeout(() => {
-      changeDrawingMode('simple_select')
-    }, 500)
+  map.addLayer({
+    id: 'road-layer',
+    type: 'background',
+    paint: {
+      'background-color': '#2a2a2a',
+    },
   })
 
-  // Drawing Updated
-  map.on('draw.update', (e) => {
-    console.log('🎨 Zeichnung aktualisiert')
-    updateDrawingsInStore()
-
-    if (window.showToast) {
-      window.showToast('Zeichnung aktualisiert', 'info')
-    }
+  map.addLayer({
+    id: 'satellite-layer',
+    type: 'background',
+    layout: { visibility: 'none' },
+    paint: {
+      'background-color': '#1a1a1a',
+    },
   })
 
-  // Drawing Deleted
-  map.on('draw.delete', (e) => {
-    console.log('🎨 Zeichnung gelöscht')
-    updateDrawingsInStore()
-
-    if (window.showToast) {
-      window.showToast(`${e.features.length} Zeichnung(en) gelöscht`, 'warning')
-    }
+  map.addLayer({
+    id: 'atlas-layer',
+    type: 'background',
+    layout: { visibility: 'none' },
+    paint: {
+      'background-color': '#0f1419',
+    },
   })
 
-  // Drawing Mode Changed
-  map.on('draw.modechange', (e) => {
-    console.log('🎨 Draw Mode Changed:', e.mode)
-    updateMapCursor(e.mode)
-  })
-
-  // Selection Changed
-  map.on('draw.selectionchange', (e) => {
-    const selectedCount = e.features.length
-    console.log(`🎯 ${selectedCount} Zeichnung(en) ausgewählt`)
-  })
+  console.log('✅ Base Layers hinzugefügt')
 }
 
-// 🎨 Drawing Mode Management
-const changeDrawingMode = (mode) => {
-  if (!draw) {
-    console.warn('❌ Draw system not initialized')
-    return
-  }
+// 📊 Setup Data Layers
+const setupDataLayers = () => {
+  console.log('📊 Setup Data Layers...')
 
-  try {
-    console.log(`🎨 Ändere Zeichenmodus zu: ${mode}`)
+  addHydrantLayer()
+  addPOILayer()
+  addMarkersLayer()
 
-    // Set the drawing mode
-    draw.changeMode(mode)
-
-    // Update cursor based on mode
-    updateMapCursor(mode)
-
-    // Show mode feedback
-    showDrawingModeToast(mode)
-  } catch (error) {
-    console.error('❌ Fehler beim Zeichenmodus-Wechsel:', error)
-  }
-}
-
-// 🎨 Update Map Cursor
-const updateMapCursor = (mode) => {
-  const canvas = map.getCanvas()
-
-  switch (mode) {
-    case 'draw_point':
-      canvas.style.cursor = 'crosshair'
-      break
-    case 'draw_line_string':
-      canvas.style.cursor = 'copy'
-      break
-    case 'draw_polygon':
-      canvas.style.cursor = 'crosshair'
-      break
-    case 'simple_select':
-    default:
-      canvas.style.cursor = ''
-      break
-  }
-}
-
-// 🎨 Show Drawing Mode Toast
-const showDrawingModeToast = (mode) => {
-  const messages = {
-    simple_select: 'Auswahlmodus aktiviert',
-    draw_point: 'Punkt-Zeichenmodus aktiviert - Klicken Sie auf die Karte',
-    draw_line_string:
-      'Linien-Zeichenmodus aktiviert - Klicken Sie um Punkte zu setzen, Doppelklick zum Beenden',
-    draw_polygon:
-      'Polygon-Zeichenmodus aktiviert - Klicken Sie um Ecken zu setzen, Doppelklick zum Beenden',
-  }
-
-  const message = messages[mode] || 'Zeichenmodus geändert'
-
-  if (window.showToast) {
-    window.showToast(message, 'info', 3000)
-  }
-}
-
-// 🎨 Update Drawing Styles
-const updateDrawingStyles = (styles) => {
-  currentDrawingStyles = { ...currentDrawingStyles, ...styles }
-
-  if (draw && map.getStyle()) {
-    try {
-      // Get current drawings
-      const currentDrawings = draw.getAll()
-
-      // Remove and re-add draw control with new styles
-      map.removeControl(draw)
-
-      // Re-initialize with new styles
-      draw = new MapboxDraw({
-        displayControlsDefault: false,
-        controls: {
-          polygon: false,
-          line_string: false,
-          point: false,
-          trash: false,
-        },
-        defaultMode: 'simple_select',
-        styles: getDrawStyles(),
-      })
-
-      map.addControl(draw, 'top-left')
-
-      // Re-add drawings
-      if (currentDrawings.features.length > 0) {
-        currentDrawings.features.forEach((feature) => {
-          draw.add(feature)
-        })
-      }
-
-      console.log('🎨 Zeichenstile aktualisiert:', currentDrawingStyles)
-
-      if (window.showToast) {
-        window.showToast('Zeichenstile angewendet', 'success')
-      }
-    } catch (error) {
-      console.error('❌ Fehler beim Stil-Update:', error)
-    }
-  }
-}
-
-// 🎨 Clear All Drawings
-const clearAllDrawings = () => {
-  if (draw) {
-    draw.deleteAll()
-    updateDrawingsInStore()
-    console.log('🗑️ Alle Zeichnungen gelöscht')
-  }
-}
-
-// 🎨 Import Drawings
-const importDrawings = (drawingsData) => {
-  if (!draw || !drawingsData.features) {
-    console.warn('❌ Cannot import drawings')
-    return
-  }
-
-  try {
-    // Clear existing drawings
-    draw.deleteAll()
-
-    // Add imported drawings
-    drawingsData.features.forEach((feature) => {
-      draw.add(feature)
-    })
-
-    // Update store
-    updateDrawingsInStore()
-
-    console.log(`📥 ${drawingsData.features.length} Zeichnungen importiert`)
-
-    if (window.showToast) {
-      window.showToast(`${drawingsData.features.length} Zeichnungen importiert`, 'success')
-    }
-  } catch (error) {
-    console.error('❌ Import error:', error)
-    if (window.showToast) {
-      window.showToast('Fehler beim Importieren', 'error')
-    }
-  }
-}
-
-// 🎨 Get Drawing Statistics
-const getDrawingStats = () => {
-  if (!draw) return { total: 0, points: 0, lines: 0, polygons: 0 }
-
-  const features = draw.getAll().features
-
-  return {
-    total: features.length,
-    points: features.filter((f) => f.geometry.type === 'Point').length,
-    lines: features.filter((f) => f.geometry.type === 'LineString').length,
-    polygons: features.filter((f) => f.geometry.type === 'Polygon').length,
-  }
-}
-
-// 🎨 Event Listeners für Sidebar Communication
-const setupDrawingEventListeners = () => {
-  // Drawing Mode Changed
-  window.addEventListener('drawing-mode-changed', (event) => {
-    const { mode } = event.detail
-    changeDrawingMode(mode)
-  })
-
-  // Drawing Styles Changed
-  window.addEventListener('drawing-styles-changed', (event) => {
-    const { styles } = event.detail
-    updateDrawingStyles(styles)
-  })
-
-  // Clear Drawings
-  window.addEventListener('clear-drawings', () => {
-    clearAllDrawings()
-  })
-
-  // Import Drawings
-  window.addEventListener('import-drawings', (event) => {
-    const { drawings } = event.detail
-    importDrawings(drawings)
-  })
-
-  console.log('🎨 Drawing Event Listeners eingerichtet')
-}
-
-// 📊 Update Drawings in Store
-const updateDrawingsInStore = () => {
-  if (draw) {
-    const drawings = draw.getAll()
-    mapStore.drawings = drawings
-    mapStore.saveDrawings()
-  }
-}
-
-// 📊 Drawings aus Store laden
-const loadDrawingsFromStore = () => {
-  console.log('📊 Lade Drawings aus Store...')
-
-  if (draw && mapStore.drawings?.features?.length > 0) {
-    // Bestehende Drawings löschen
-    draw.deleteAll()
-
-    // Drawings aus Store hinzufügen
-    mapStore.drawings.features.forEach((feature) => {
-      draw.add(feature)
-    })
-
-    console.log(`✅ ${mapStore.drawings.features.length} Drawings geladen`)
-  }
-}
-
-// 🎯 Map Events Setup - VOLLSTÄNDIG KORRIGIERT
-const setupMapEvents = () => {
-  console.log('🎯 Setup Map Events für Position Picking...')
-
-  // Hauptsächlicher Map Click Handler
-  map.on('click', (e) => {
-    console.log('🗺️ Map Click:', e.lngLat)
-
-    // Position Picking für Hydranten/POI/Marker
-    if (uiStore.isPickingPosition) {
-      handlePositionPick(e.lngLat)
-      return
-    }
-
-    // Normale Map Clicks
-    console.log('🗺️ Normal map click')
-  })
-
-  // 🚒 Hydrant Click Events
-  map.on('click', 'hydrants-layer', (e) => {
-    const hydrant = e.features[0].properties
-    console.log('🚒 Hydrant geklickt:', hydrant)
-    showHydrantPopup(e.features[0], e.lngLat)
-    hydrantsStore.selectHydrant(hydrant.id)
-  })
-
-  // 🏭 POI Click Events (beide Layer abfangen)
-  const handlePOIClick = (e) => {
-    const poi = e.features[0].properties
-    console.log('🏭 POI geklickt:', poi)
-    showPOIPopup(e.features[0], e.lngLat)
-    poiStore.selectPOI(poi.id)
-  }
-
-  map.on('click', 'pois-layer', handlePOIClick)
-  map.on('click', 'pois-icons', handlePOIClick)
-
-  // 📍 Marker Click Events (beide Layer abfangen)
-  const handleMarkerClick = (e) => {
-    const marker = e.features[0].properties
-    console.log('📍 Marker geklickt:', marker)
-    showMarkerPopup(e.features[0], e.lngLat)
-    markersStore.selectMarker(marker.id)
-  }
-
-  map.on('click', 'markers-layer', handleMarkerClick)
-  map.on('click', 'markers-icons', handleMarkerClick)
-
-  // 🖱️ Cursor Events für alle Layer
-  const setupCursorEvents = (layerName) => {
-    map.on('mouseenter', layerName, () => {
-      map.getCanvas().style.cursor = 'pointer'
-    })
-    map.on('mouseleave', layerName, () => {
-      map.getCanvas().style.cursor = ''
-    })
-  }
-
-  // Cursor Events für alle interaktiven Layer
-  setupCursorEvents('hydrants-layer')
-  setupCursorEvents('pois-layer')
-  setupCursorEvents('pois-icons')
-  setupCursorEvents('markers-layer')
-  setupCursorEvents('markers-icons')
-}
-
-// 🎯 Handle Position Picking
-const handlePositionPick = (lngLat) => {
-  console.log('🎯 Position gepickt:', lngLat)
-
-  try {
-    if (uiStore.isAddingHydrant) {
-      const newHydrant = hydrantsStore.addHydrant({
-        ...uiStore.pendingHydrantData,
-        lng: lngLat.lng,
-        lat: lngLat.lat,
-      })
-      console.log('✅ Hydrant hinzugefügt:', newHydrant)
-      emit('position-picked', { type: 'hydrant', data: newHydrant })
-    }
-
-    if (uiStore.isAddingPOI) {
-      const newPOI = poiStore.addPOI({
-        ...uiStore.pendingPOIData,
-        lng: lngLat.lng,
-        lat: lngLat.lat,
-      })
-      console.log('✅ POI hinzugefügt:', newPOI)
-      emit('position-picked', { type: 'poi', data: newPOI })
-    }
-
-    if (uiStore.isAddingMarker) {
-      const newMarker = markersStore.addMarker({
-        ...uiStore.pendingMarkerData,
-        lng: lngLat.lng,
-        lat: lngLat.lat,
-      })
-      console.log('✅ Marker hinzugefügt:', newMarker)
-      emit('position-picked', { type: 'marker', data: newMarker })
-    }
-
-    // ✅ ERFOLGREICHEN RESET HINZUFÜGEN:
-    uiStore.resetPositionPicking()
-
-    // Cursor zurücksetzen
-    map.getCanvas().style.cursor = ''
-  } catch (error) {
-    console.error('❌ Fehler beim Position Picking:', error)
-    uiStore.resetPositionPicking()
-  }
+  console.log('✅ Alle Data Layers hinzugefügt')
 }
 
 // 🚒 Hydrant Layer
@@ -772,7 +187,7 @@ const addHydrantLayer = () => {
 }
 
 const refreshHydrantLayer = () => {
-  if (map.getSource('hydrants')) {
+  if (map && map.getSource('hydrants')) {
     const features = hydrantsStore.hydrants.map((hydrant) => ({
       type: 'Feature',
       geometry: {
@@ -789,9 +204,9 @@ const refreshHydrantLayer = () => {
   }
 }
 
-// 🏭 POI Layer mit Icons
+// 🏭 POI Layer - KORRIGIERT für graue POIs
 const addPOILayer = () => {
-  console.log('🏭 Füge POI Layer mit Icons hinzu...')
+  console.log('🏭 Füge POI Layer hinzu...')
 
   try {
     map.addSource('pois', {
@@ -802,13 +217,12 @@ const addPOILayer = () => {
       },
     })
 
-    // 1. 🎨 Farbiger Kreis-Hintergrund
     map.addLayer({
       id: 'pois-layer',
       type: 'circle',
       source: 'pois',
       paint: {
-        'circle-radius': 16, // Größer für Icon-Platz
+        'circle-radius': 12,
         'circle-color': [
           'case',
           ['==', ['get', 'category'], 'gas_station'],
@@ -821,56 +235,34 @@ const addPOILayer = () => {
           '#495057',
           ['==', ['get', 'category'], 'tanks'],
           '#20c997',
-          '#cccccc',
+          '#ff4444', // KORRIGIERT: Fallback-Farbe für leere Kategorien
         ],
-        'circle-stroke-width': 3,
+        'circle-stroke-width': 2,
         'circle-stroke-color': '#ffffff',
-        'circle-opacity': 0.9,
-      },
-    })
-
-    // 2. 🎯 Icon Layer darüber
-    map.addLayer({
-      id: 'pois-icons',
-      type: 'symbol',
-      source: 'pois',
-      layout: {
-        'text-field': [
-          'case',
-          ['==', ['get', 'category'], 'gas_station'],
-          '⛽',
-          ['==', ['get', 'category'], 'windmill'],
-          '💨',
-          ['==', ['get', 'category'], 'power_plant'],
-          '⚡',
-          ['==', ['get', 'category'], 'oil_pump'],
-          '🛢️',
-          ['==', ['get', 'category'], 'tanks'],
-          '🗂️',
-          '🏭',
-        ],
-        'text-size': 16,
-        'text-anchor': 'center',
-        'text-allow-overlap': true,
-        'text-ignore-placement': true,
-      },
-      paint: {
-        'text-color': '#ffffff',
-        'text-halo-color': 'rgba(0, 0, 0, 0.5)',
-        'text-halo-width': 1,
       },
     })
 
     refreshPOILayer()
-    console.log('✅ POI Layer mit Icons hinzugefügt')
+    console.log('✅ POI Layer hinzugefügt')
   } catch (error) {
     console.error('❌ POI Layer Fehler:', error)
   }
 }
 
 const refreshPOILayer = () => {
-  if (map.getSource('pois')) {
-    const features = poiStore.pois.map((poi) => ({
+  if (map && map.getSource('pois')) {
+    // KORRIGIERT: Filtere POIs basierend auf Kategorie-Sichtbarkeit
+    const visiblePOIs = poiStore.pois.filter((poi) => {
+      if (!poi.category) {
+        console.warn('⚠️ POI ohne Kategorie gefunden:', poi)
+        return true // Zeige POIs ohne Kategorie trotzdem an
+      }
+      return mapStore.layers[poi.category] !== false
+    })
+
+    console.log(`🏭 POI Refresh: ${visiblePOIs.length}/${poiStore.pois.length} POIs sichtbar`)
+
+    const features = visiblePOIs.map((poi) => ({
       type: 'Feature',
       geometry: {
         type: 'Point',
@@ -886,9 +278,9 @@ const refreshPOILayer = () => {
   }
 }
 
-// 📍 Markers Layer mit Icons
+// 📍 Markers Layer - KORRIGIERT mit Icons
 const addMarkersLayer = () => {
-  console.log('📍 Füge Markers Layer mit Icons hinzu...')
+  console.log('📍 Füge Markers Layer hinzu...')
 
   try {
     map.addSource('markers', {
@@ -899,13 +291,13 @@ const addMarkersLayer = () => {
       },
     })
 
-    // 1. 🎨 Farbiger Kreis-Hintergrund
+    // Background Circle für bessere Sichtbarkeit
     map.addLayer({
-      id: 'markers-layer',
+      id: 'markers-background',
       type: 'circle',
       source: 'markers',
       paint: {
-        'circle-radius': 14, // Etwas kleiner als POIs
+        'circle-radius': 14,
         'circle-color': [
           'case',
           ['==', ['get', 'category'], 'route'],
@@ -922,22 +314,22 @@ const addMarkersLayer = () => {
           '#ff6b35',
           '#cccccc',
         ],
-        'circle-stroke-width': 3,
+        'circle-stroke-width': 2,
         'circle-stroke-color': '#ffffff',
         'circle-opacity': 0.9,
       },
     })
 
-    // 2. 🎯 Icon Layer darüber
+    // Text/Icon Layer darüber
     map.addLayer({
-      id: 'markers-icons',
+      id: 'markers-layer',
       type: 'symbol',
       source: 'markers',
       layout: {
         'text-field': [
           'case',
           ['==', ['get', 'category'], 'route'],
-          '🛣️',
+          '🚗',
           ['==', ['get', 'category'], 'assembly'],
           '👥',
           ['==', ['get', 'category'], 'warning'],
@@ -945,9 +337,9 @@ const addMarkersLayer = () => {
           ['==', ['get', 'category'], 'star'],
           '⭐',
           ['==', ['get', 'category'], 'staging'],
-          '🚛',
+          '🏕️',
           ['==', ['get', 'category'], 'command'],
-          '🚩',
+          '🎯',
           '📍',
         ],
         'text-size': 14,
@@ -957,8 +349,6 @@ const addMarkersLayer = () => {
       },
       paint: {
         'text-color': '#ffffff',
-        'text-halo-color': 'rgba(0, 0, 0, 0.8)',
-        'text-halo-width': 1,
       },
     })
 
@@ -970,7 +360,7 @@ const addMarkersLayer = () => {
 }
 
 const refreshMarkersLayer = () => {
-  if (map.getSource('markers')) {
+  if (map && map.getSource('markers')) {
     const features = markersStore.markers.map((marker) => ({
       type: 'Feature',
       geometry: {
@@ -990,7 +380,6 @@ const refreshMarkersLayer = () => {
 // 💬 Popup Functions
 const showHydrantPopup = (feature, lngLat) => {
   const props = feature.properties
-
   const statusColors = {
     ok: '#2ed573',
     wartung: '#ffa502',
@@ -1018,10 +407,10 @@ const showPOIPopup = (feature, lngLat) => {
 
   const popupContent = `
     <div style="color: #ffffff; font-weight: bold; margin-bottom: 8px;">
-      🏭 ${props.name}
+      🏭 ${props.name || 'Unbenannter POI'}
     </div>
     <div style="font-size: 12px; line-height: 1.4;">
-      <strong>Kategorie:</strong> ${poiCategories[props.category]?.name || props.category}<br>
+      <strong>Kategorie:</strong> ${poiCategories[props.category]?.name || props.category || 'Unbekannt'}<br>
       <strong>Beschreibung:</strong> ${props.description || 'Keine Beschreibung'}
     </div>
   `
@@ -1034,10 +423,10 @@ const showMarkerPopup = (feature, lngLat) => {
 
   const popupContent = `
     <div style="color: #ffffff; font-weight: bold; margin-bottom: 8px;">
-      📍 ${props.name}
+      📍 ${props.name || 'Unbenannter Marker'}
     </div>
     <div style="font-size: 12px; line-height: 1.4;">
-      <strong>Kategorie:</strong> ${markerCategories[props.category]?.name || props.category}<br>
+      <strong>Kategorie:</strong> ${markerCategories[props.category]?.name || props.category || 'Unbekannt'}<br>
       <strong>Beschreibung:</strong> ${props.description || 'Keine Beschreibung'}
     </div>
   `
@@ -1045,21 +434,305 @@ const showMarkerPopup = (feature, lngLat) => {
   new maplibregl.Popup().setLngLat(lngLat).setHTML(popupContent).addTo(map)
 }
 
-// 🎛️ Layer Toggle Management
+// 🎛️ Layer Toggle Management - KORRIGIERT
 const toggleLayer = (layerName, visible) => {
-  if (map && map.getLayer(layerName)) {
-    const visibility = visible ? 'visible' : 'none'
-    map.setLayoutProperty(layerName, 'visibility', visibility)
+  if (!map) return
 
-    // Auch Icon-Layer toggling (falls vorhanden)
-    const iconLayerName = layerName.replace('-layer', '-icons')
-    if (map.getLayer(iconLayerName)) {
-      map.setLayoutProperty(iconLayerName, 'visibility', visibility)
+  const visibility = visible ? 'visible' : 'none'
+
+  // Multi-Layer für Marker
+  if (layerName === 'markers') {
+    ;['markers-background', 'markers-layer'].forEach((layer) => {
+      if (map.getLayer(layer)) {
+        map.setLayoutProperty(layer, 'visibility', visibility)
+      }
+    })
+    console.log(`🔄 Toggle markers (multi): ${visibility}`)
+    return
+  }
+
+  // Standard Layer
+  if (map.getLayer(layerName)) {
+    map.setLayoutProperty(layerName, 'visibility', visibility)
+    console.log(`🔄 Toggle ${layerName}: ${visibility}`)
+  }
+}
+
+// 🎯 Map Events Setup
+const setupMapEvents = () => {
+  console.log('🎯 Setup Map Events...')
+
+  // Main Map Click
+  map.on('click', (e) => {
+    console.log('🗺️ Map Click:', e.lngLat)
+
+    if (uiStore.isPickingPosition) {
+      handlePositionPick(e.lngLat)
+      return
+    }
+
+    console.log('🗺️ Normal map click')
+  })
+
+  // Layer Click Events
+  map.on('click', 'hydrants-layer', (e) => {
+    const hydrant = e.features[0].properties
+    console.log('🚒 Hydrant geklickt:', hydrant)
+    showHydrantPopup(e.features[0], e.lngLat)
+    hydrantsStore.selectHydrant(hydrant.id)
+    e.stopPropagation()
+  })
+
+  map.on('click', 'pois-layer', (e) => {
+    const poi = e.features[0].properties
+    console.log('🏭 POI geklickt:', poi)
+    showPOIPopup(e.features[0], e.lngLat)
+    poiStore.selectPOI(poi.id)
+    e.stopPropagation()
+  })
+
+  // Marker Click Events für beide Layer
+  ;['markers-layer', 'markers-background'].forEach((layerName) => {
+    map.on('click', layerName, (e) => {
+      const marker = e.features[0].properties
+      console.log('📍 Marker geklickt:', marker)
+      showMarkerPopup(e.features[0], e.lngLat)
+      markersStore.selectMarker(marker.id)
+      e.stopPropagation()
+    })
+  })
+
+  // Hover Effects
+  ;['hydrants-layer', 'pois-layer', 'markers-layer', 'markers-background'].forEach((layerName) => {
+    map.on('mouseenter', layerName, () => {
+      map.getCanvas().style.cursor = 'pointer'
+    })
+
+    map.on('mouseleave', layerName, () => {
+      map.getCanvas().style.cursor = ''
+    })
+  })
+
+  console.log('✅ Map Events eingerichtet')
+}
+
+// 🎯 Handle Position Picking - KORRIGIERT
+const handlePositionPick = (lngLat) => {
+  console.log('🎯 Position gepickt:', lngLat)
+
+  try {
+    if (uiStore.isAddingHydrant && uiStore.pendingHydrantData) {
+      const newHydrant = hydrantsStore.addHydrant({
+        ...uiStore.pendingHydrantData,
+        lng: lngLat.lng,
+        lat: lngLat.lat,
+      })
+      console.log('✅ Hydrant hinzugefügt:', newHydrant)
+
+      if (window.showToast) {
+        window.showToast(`Hydrant #${newHydrant.id} hinzugefügt`, 'success')
+      }
+
+      uiStore.resetPositionPicking()
+      emit('position-picked', { type: 'hydrant', data: newHydrant })
+    }
+
+    if (uiStore.isAddingPOI && uiStore.pendingPOIData) {
+      console.log('🏭 POI Daten beim Position Picking:', uiStore.pendingPOIData)
+
+      // KORRIGIERT: Prüfe dass POI-Daten vollständig sind
+      if (!uiStore.pendingPOIData.name || !uiStore.pendingPOIData.category) {
+        console.error('❌ POI Daten unvollständig:', uiStore.pendingPOIData)
+        if (window.showToast) {
+          window.showToast('POI Daten sind unvollständig', 'error')
+        }
+        uiStore.resetPositionPicking()
+        return
+      }
+
+      const newPOI = poiStore.addPOI({
+        ...uiStore.pendingPOIData,
+        lng: lngLat.lng,
+        lat: lngLat.lat,
+      })
+      console.log('✅ POI hinzugefügt:', newPOI)
+
+      if (window.showToast) {
+        window.showToast(`POI "${newPOI.name}" hinzugefügt`, 'success')
+      }
+
+      uiStore.resetPositionPicking()
+      emit('position-picked', { type: 'poi', data: newPOI })
+    }
+
+    if (uiStore.isAddingMarker && uiStore.pendingMarkerData) {
+      const newMarker = markersStore.addMarker({
+        ...uiStore.pendingMarkerData,
+        lng: lngLat.lng,
+        lat: lngLat.lat,
+      })
+      console.log('✅ Marker hinzugefügt:', newMarker)
+
+      if (window.showToast) {
+        window.showToast(`Marker "${newMarker.name}" hinzugefügt`, 'success')
+      }
+
+      uiStore.resetPositionPicking()
+      emit('position-picked', { type: 'marker', data: newMarker })
+    }
+
+    map.getCanvas().style.cursor = ''
+  } catch (error) {
+    console.error('❌ Fehler beim Position Picking:', error)
+    uiStore.resetPositionPicking()
+
+    if (window.showToast) {
+      window.showToast('Fehler beim Platzieren des Objekts', 'error')
     }
   }
 }
 
-// 👀 Watchers
+// 🎨 Drawing Tools Setup
+const setupDrawingTools = () => {
+  console.log('🎨 Setup Drawing Tools...')
+
+  try {
+    draw = new MapboxDraw({
+      displayControlsDefault: false,
+      controls: {},
+      styles: [
+        {
+          id: 'gl-draw-polygon-fill',
+          type: 'fill',
+          filter: ['all', ['==', '$type', 'Polygon']],
+          paint: {
+            'fill-color': currentDrawingStyles.fillColor,
+            'fill-opacity': currentDrawingStyles.fillOpacity,
+          },
+        },
+        {
+          id: 'gl-draw-polygon-stroke',
+          type: 'line',
+          filter: ['all', ['==', '$type', 'Polygon']],
+          paint: {
+            'line-color': currentDrawingStyles.strokeColor,
+            'line-width': currentDrawingStyles.strokeWidth,
+          },
+        },
+        {
+          id: 'gl-draw-line',
+          type: 'line',
+          filter: ['all', ['==', '$type', 'LineString']],
+          paint: {
+            'line-color': currentDrawingStyles.strokeColor,
+            'line-width': currentDrawingStyles.strokeWidth,
+          },
+        },
+        {
+          id: 'gl-draw-point',
+          type: 'circle',
+          filter: ['all', ['==', '$type', 'Point']],
+          paint: {
+            'circle-radius': 6,
+            'circle-color': currentDrawingStyles.strokeColor,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff',
+          },
+        },
+      ],
+    })
+
+    map.addControl(draw, 'top-left')
+    setupDrawingEvents()
+    loadDrawingsFromStore()
+
+    console.log('✅ Drawing Tools eingerichtet')
+  } catch (error) {
+    console.error('❌ Drawing Tools Fehler:', error)
+  }
+}
+
+const setupDrawingEvents = () => {
+  if (!draw) return
+
+  map.on('draw.create', updateDrawingsInStore)
+  map.on('draw.update', updateDrawingsInStore)
+  map.on('draw.delete', updateDrawingsInStore)
+
+  window.addEventListener('changeDrawingMode', (event) => {
+    const { mode } = event.detail
+    changeDrawingMode(mode)
+  })
+
+  window.addEventListener('updateDrawingStyles', (event) => {
+    const { styles } = event.detail
+    updateDrawingStyles(styles)
+  })
+
+  window.addEventListener('clearAllDrawings', () => {
+    clearAllDrawings()
+  })
+
+  window.addEventListener('importDrawings', (event) => {
+    const { drawings } = event.detail
+    importDrawings(drawings)
+  })
+}
+
+const updateDrawingsInStore = () => {
+  if (draw) {
+    const drawings = draw.getAll()
+    mapStore.drawings = drawings
+    mapStore.saveDrawings()
+  }
+}
+
+const loadDrawingsFromStore = () => {
+  console.log('📊 Lade Drawings aus Store...')
+
+  if (draw && mapStore.drawings?.features?.length > 0) {
+    draw.deleteAll()
+
+    mapStore.drawings.features.forEach((feature) => {
+      draw.add(feature)
+    })
+
+    console.log(`✅ ${mapStore.drawings.features.length} Drawings geladen`)
+  }
+}
+
+const changeDrawingMode = (mode) => {
+  if (draw) {
+    draw.changeMode(mode)
+    console.log(`🎨 Drawing Mode: ${mode}`)
+  }
+}
+
+const updateDrawingStyles = (styles) => {
+  currentDrawingStyles = { ...currentDrawingStyles, ...styles }
+  console.log('🎨 Drawing Styles aktualisiert:', currentDrawingStyles)
+}
+
+const clearAllDrawings = () => {
+  if (draw) {
+    draw.deleteAll()
+    updateDrawingsInStore()
+    console.log('🗑️ Alle Drawings gelöscht')
+  }
+}
+
+const importDrawings = (drawings) => {
+  if (draw && drawings?.features) {
+    draw.deleteAll()
+    drawings.features.forEach((feature) => {
+      draw.add(feature)
+    })
+    updateDrawingsInStore()
+    console.log(`📥 ${drawings.features.length} Drawings importiert`)
+  }
+}
+
+// 👀 Watchers - KORRIGIERT
 watch(
   () => hydrantsStore.hydrants,
   () => {
@@ -1084,29 +757,53 @@ watch(
   { deep: true },
 )
 
+// KORRIGIERT: Layer Visibility Watch
 watch(
   () => mapStore.layers,
   (newLayers) => {
+    console.log('🎛️ Layer Toggle erkannt:', newLayers)
+
     Object.keys(newLayers).forEach((layerName) => {
-      const mapLayerName =
-        layerName === 'hydrants'
-          ? 'hydrants-layer'
-          : layerName === 'pois'
-            ? 'pois-layer'
-            : layerName === 'markers'
-              ? 'markers-layer'
-              : layerName
-      toggleLayer(mapLayerName, newLayers[layerName])
+      if (layerName === 'hydrants') {
+        toggleLayer('hydrants-layer', newLayers[layerName])
+      } else if (layerName === 'drawings') {
+        // Drawing Layer Visibility
+        if (draw) {
+          const visibility = newLayers[layerName] ? 'visible' : 'none'
+          const drawLayers = [
+            'gl-draw-polygon-fill',
+            'gl-draw-polygon-stroke',
+            'gl-draw-line',
+            'gl-draw-point',
+          ]
+          drawLayers.forEach((drawLayer) => {
+            if (map.getLayer(drawLayer)) {
+              map.setLayoutProperty(drawLayer, 'visibility', visibility)
+            }
+          })
+        }
+      } else if (
+        ['gas_station', 'windmill', 'power_plant', 'oil_pump', 'tanks'].includes(layerName)
+      ) {
+        // POI Kategorie Toggle - refresh POI Layer
+        refreshPOILayer()
+      } else if (layerName === 'routes' || layerName === 'exclusions') {
+        // Marker Layer
+        toggleLayer('markers', newLayers[layerName])
+      } else {
+        // Standard Layer
+        toggleLayer(layerName, newLayers[layerName])
+      }
     })
   },
   { deep: true },
 )
 
+// Map Style Watch
 watch(
   () => mapStore.mapStyle,
   (newStyle) => {
     if (map && newStyle) {
-      // Switch map style
       const layers = ['road-layer', 'satellite-layer', 'atlas-layer']
       layers.forEach((layer) => {
         if (map.getLayer(layer)) {
@@ -1118,13 +815,18 @@ watch(
       if (map.getLayer(targetLayer)) {
         map.setLayoutProperty(targetLayer, 'visibility', 'visible')
       }
+
+      console.log(`🎨 Map Style gewechselt zu: ${newStyle}`)
     }
   },
 )
 
-// 🎬 Lifecycle
+// 🎬 Lifecycle - VEREINFACHT
 onMounted(() => {
-  initializeMap()
+  // Kleine Verzögerung für sicheres DOM-Rendering
+  setTimeout(() => {
+    initializeMap()
+  }, 50)
 })
 
 onUnmounted(() => {
@@ -1133,22 +835,7 @@ onUnmounted(() => {
   }
 })
 
-// 🔧 Expose Drawing Functions (für debugging)
-const exposeDrawingFunctions = () => {
-  window.debugDrawing = {
-    changeMode: changeDrawingMode,
-    updateStyles: updateDrawingStyles,
-    clearAll: clearAllDrawings,
-    getStats: getDrawingStats,
-    getCurrentStyles: () => currentDrawingStyles,
-    getDraw: () => draw,
-    getMap: () => map,
-  }
-
-  console.log('🔧 Debug: Drawing functions available as window.debugDrawing')
-}
-
-// 📤 Expose Methods für Parent Components
+// 📤 Expose Methods
 defineExpose({
   map: () => map,
   draw: () => draw,
@@ -1176,8 +863,23 @@ defineExpose({
   },
   importDrawings,
   updateDrawingStyles,
-  getDrawingStats,
 })
+
+// 🔧 Debug für Entwicklung
+if (import.meta.env.DEV) {
+  window.debugMap = {
+    getMap: () => map,
+    getDraw: () => draw,
+    getLayers: () => map?.getStyle().layers.map((l) => l.id),
+    getSources: () => Object.keys(map?.getStyle().sources || {}),
+    getStores: () => ({ mapStore, hydrantsStore, poiStore, markersStore, uiStore }),
+    testPOI: () => {
+      const testData = { name: 'Test POI', category: 'gas_station', description: 'Test' }
+      uiStore.startPOIPicking(testData)
+      console.log('🧪 Test POI Picking gestartet')
+    },
+  }
+}
 </script>
 
 <style scoped>
@@ -1186,26 +888,25 @@ defineExpose({
   height: 100vh;
 }
 
-/* 🎨 MapLibre Custom Styles */
+/* MapLibre Custom Styles */
 :deep(.maplibregl-ctrl-group) {
   background: var(--surface) !important;
   border: 1px solid var(--border-color) !important;
   border-radius: 12px !important;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
   backdrop-filter: blur(20px) !important;
-  display: none !important; /* Hide default controls */
 }
 
 :deep(.maplibregl-ctrl button) {
   background: transparent !important;
-  color: var(--text-primary) !important;
   border: none !important;
-  width: 40px !important;
-  height: 40px !important;
+  color: var(--text-primary) !important;
+  font-size: 18px !important;
+  padding: 8px !important;
 }
 
 :deep(.maplibregl-ctrl button:hover) {
-  background: var(--surface-hover) !important;
+  background: var(--hover-bg) !important;
 }
 
 :deep(.maplibregl-popup-content) {
@@ -1214,26 +915,10 @@ defineExpose({
   border: 1px solid var(--border-color) !important;
   border-radius: 12px !important;
   backdrop-filter: blur(20px) !important;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
 }
 
 :deep(.maplibregl-popup-close-button) {
   color: var(--text-primary) !important;
   font-size: 18px !important;
-  right: 8px !important;
-  top: 8px !important;
-}
-
-:deep(.maplibregl-popup-tip) {
-  border-top-color: var(--surface) !important;
-}
-
-/* Drawing Controls ausblenden */
-:deep(.mapbox-gl-draw_ctrl-draw-btn) {
-  display: none !important;
-}
-
-:deep(.mapbox-gl-draw_trash) {
-  display: none !important;
 }
 </style>
