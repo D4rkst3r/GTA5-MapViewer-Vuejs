@@ -633,7 +633,6 @@ const setupMapEvents = () => {
     console.log('🚒 Hydrant geklickt:', hydrant)
     showHydrantPopup(e.features[0], e.lngLat)
     hydrantsStore.selectHydrant(hydrant.id)
-    e.stopPropagation()
   })
 
   // 🏭 POI Click Events (beide Layer abfangen)
@@ -642,7 +641,6 @@ const setupMapEvents = () => {
     console.log('🏭 POI geklickt:', poi)
     showPOIPopup(e.features[0], e.lngLat)
     poiStore.selectPOI(poi.id)
-    e.stopPropagation()
   }
 
   map.on('click', 'pois-layer', handlePOIClick)
@@ -654,7 +652,6 @@ const setupMapEvents = () => {
     console.log('📍 Marker geklickt:', marker)
     showMarkerPopup(e.features[0], e.lngLat)
     markersStore.selectMarker(marker.id)
-    e.stopPropagation()
   }
 
   map.on('click', 'markers-layer', handleMarkerClick)
